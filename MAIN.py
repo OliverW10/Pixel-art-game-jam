@@ -10,14 +10,20 @@ with redirect_stdout(None):
 displayWidth, displayHeight = 800, 600
 pygame.init()
 screenDisplay = pygame.display.set_mode((displayWidth, displayHeight))
-pygame.display.set_caption("Game")
+pygame.display.set_caption("we still need a name for our game")
 clock = pygame.time.Clock()
 loadImage = pygame.image.load
 
+# AttrDict class
+class AttrDict(dict):
+    def __getattr__(self, attr):  return self[attr]
+    def __setattr__(self, attr, value):  self[attr] = value
+
 # Variables
 gameState = "Menu"
-MAP = MENU = F = {}
+MAP = MENU = F = AttrDict({})
 Keys = {"W": False, "A": False, "S": False, "D": False, "E": False}
+F.inventory = ['cannonball', 'birb', 'monkey']
 
 # Areas
 MAP["PirateShips"] = []
@@ -29,7 +35,7 @@ MAP["ActualDrawShip"] = MAP["ShipDrawPos"][:]
 MAP["waveList"] = []
 
 # Loading Sprites/images
-MAP["ships"] = [
+MAP.ships = [
 	loadImage("mapAssets/shipL.png"),
 	loadImage("mapAssets/shipUL.png"),
 	loadImage("mapAssets/shipU.png"),
@@ -49,35 +55,35 @@ MENU["ButtonQuit"] = loadImage("menuAssets/quitButton.png")
 MAP["MainSurf"] = pygame.Surface(MAP["AreaSize"])  # is shifted
 class wave:
 	def __init__(self, X, Y):
-		self.X=X
-		self.Y=Y
-		self.size=1
-		self.dir="up"
-		self.colour=(50,60,200)
-		self.delete=False
-		self.maxSize=8
-		self.speed=15
+		self.X = X
+		self.Y = Y
+		self.size = 1
+		self.dir = "up"
+		self.colour = (50,60,200)
+		self.delete = False
+		self.maxSize = 8
+		self.speed = 15
 
 	def draw(self):
-		if self.dir=="up":
-			self.size+=frameTime*self.speed
+		if self.dir == "up":
+			self.size += frameTime * self.speed
 		else:
-			self.size-=frameTime*self.speed
+			self.size -= frameTime * self.speed
 
-		if self.size>self.maxSize:
-			self.dir="down"
-		if self.size<0:
-			self.delete=True
-		pygame.draw.polygon(MAP["MainSurf"], self.colour, ((self.X+self.size, self.Y), (self.X-self.size, self.Y), (self.X, self.Y-self.size)))
+		if self.size > self.maxSize:
+			self.dir = "down"
+		if self.size < 0:
+			self.delete = True
+		pygame.draw.polygon(MAP["MainSurf"], self.colour, ((self.X + self.size, self.Y), (self.X - self.size, self.Y), (self.X, self.Y - self.size)))
 
 
 class pirateShip:
 	def __init__(self, X, Y, power):
-		self.X=X
-		self.Y=Y
-		self.health=power
-		self.cannons=round(power/100)
-		self.goingTo=[random.randint(MAP["AreaSize"][0], MAP.AreaSize[1])]
+		self.X = X
+		self.Y = Y
+		self.health = power
+		self.cannons = round(power/100)
+		self.goingTo = [random.randint(MAP["AreaSize"][0], MAP.AreaSize[1])]
 
 # GAME STATES (Functions)
 def map():
@@ -113,7 +119,7 @@ def map():
 		MAP["ShipDrawPos"][0] = displayWidth * 0.5
 
 
-	if random.randint(0,100)<99:
+	if random.randint(0,100) < 99:
 		MAP["waveList"].append(wave(MAP["PlayerPos"][0]+random.randint(-50, displayWidth+50),
 		 MAP["PlayerPos"][1]+random.randint(-50, displayHeight+50)))
 	for i in range(len(MAP["waveList"])):
@@ -164,7 +170,7 @@ def battleScreen():
 	"""Behaviorial script"""
 
 
-def cutScene():
+def cutScene(): # Need to make
 	pass
 
 
@@ -191,28 +197,20 @@ while True:
 			quit()
 
 		if event.type == pygame.KEYDOWN:
-			if event.key == pygame.K_w:
-				Keys["W"] = True
-			if event.key == pygame.K_a:
-				Keys["A"] = True
-			if event.key == pygame.K_s:
-				Keys["S"] = True
-			if event.key == pygame.K_d:
-				Keys["D"] = True
+			if event.key == pygame.K_w:	Keys["W"] = True
+			if event.key == pygame.K_a: Keys["A"] = True
+			if event.key == pygame.K_s: Keys["S"] = True
+			if event.key == pygame.K_d: Keys["D"] = True
 
 		if event.type == pygame.KEYUP:
-			if event.key == pygame.K_w:
-				Keys["W"] = False
-			if event.key == pygame.K_a:
-				Keys["A"] = False
-			if event.key == pygame.K_s:
-				Keys["S"] = False
-			if event.key == pygame.K_d:
-				Keys["D"] = False
-	if gameState=="Menu":
+			if event.key == pygame.K_w: Keys["W"] = False
+			if event.key == pygame.K_a: Keys["A"] = False
+			if event.key == pygame.K_s: Keys["S"] = False
+			if event.key == pygame.K_d: Keys["D"] = False
+	if gameState == "Menu":
 		menu()
 
-	if gameState=="Map":
+	if gameState == "Map":
 		map()
 
 	pygame.display.update()
