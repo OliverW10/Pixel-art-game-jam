@@ -38,7 +38,7 @@ MAP["ActualDrawShip"] = MAP["ShipDrawPos"][:]
 MAP["waveList"] = []
 MAP["WindDir"] = random.randint(0,360) #in degrees beacuse its easier for me
 MAP["WindSpeed"] = random.randint(1,10)
-
+MAP["screenRect"] = pygame.Rect(-25, -25, displayWidth+50, displayHeight+50)
 #Surfaces
 MAP["MainSurf"] = pygame.Surface(MAP["AreaSize"])  # is shifted -playerPos, anything draw on here will be relative to world
 
@@ -122,24 +122,37 @@ class MapPirateShip:
 			if self.state == "wander":
 				self.goingTo = [random.randint(0, MAP["AreaSize"][0]), random.randint(0, MAP["AreaSize"][1])]
 		else:
-			if self.X > self.goingTo[0] and abs(self.X-self.goingTo[0]) < 5:
+			if self.X > self.goingTo[0]:
 				self.X-=frameTime*self.speed
 				self.dir = 3
-			if self.X < self.goingTo[0] and abs(self.X-self.goingTo[0]) < 5:
+			if self.X < self.goingTo[0]:
 				self.X+=frameTime*self.speed
 				self.dir = 1
-			if self.Y > self.goingTo[1] and abs(self.Y-self.goingTo[1]) < 5:
+			if self.Y > self.goingTo[1]:
 				self.Y-=frameTime*self.speed
 				self.dir = 0
-			if self.Y < self.goingTo[1] and abs(self.Y-self.goingTo[1]) < 5:
+			if self.Y < self.goingTo[1]:
 				self.Y+=frameTime*self.speed
 				self.dir = 2
+			distX = self.goingTo[0] - self.X
+			distY = self.goingTo[1] - self.Y
+			if abs(distX) > abs(distY):
+				if distX > 0:
+					self.dir = 2
+				else:
+					self.dir = 0
+			else:
+				if distY > 0:
+					self.dir = 3
+				else:
+					self.dir = 1
 
 		if self.state == "attack":
 			self.goingTo == MAP["PlayerPos"]
 
 	def draw(self):
 		MAP["MainSurf"].blit(MAP["pirateShipsSprites"][self.type][self.dir], (self.X, self.Y))
+		
 
 for i in range(25):
 	MAP["PirateShips"].append( MapPirateShip(random.randint(0, MAP["AreaSize"][0]), random.randint(0, MAP["AreaSize"][1]), 7))
@@ -187,21 +200,27 @@ def map():
 	MAP["PlayerPos"][1] += MAP["PlayerSpeed"][1] 
 
 	MAP["ScreenPos"]=[MAP["PlayerPos"][0]-displayWidth/2, MAP["PlayerPos"][1]-displayHeight/2]
-	#Pirates
-	for i in range(len(MAP["PirateShips"])):
-		MAP["PirateShips"][i].AI()
-		MAP["PirateShips"][i].draw()
+
 	#Waves
 	if random.randint(0,100) < 99:
-		MAP["waveList"].append(wave(MAP["PlayerPos"][0]+random.randint(-50, displayWidth+50),
-		 MAP["PlayerPos"][1]+random.randint(-50, displayHeight+50)))
+		MAP["waveList"].append(wave(MAP["PlayerPos"][0]+random.randint(-displayWidth/2-50, displayWidth/2+50),
+		MAP["PlayerPos"][1]+random.randint(-displayHeight/2-50, displayHeight/2+50)))
 	for i in range(len(MAP["waveList"])):
 		MAP["waveList"][i].draw()
 	waveDeleter()
+
+	#Pirates
+	for i in range(len(MAP["PirateShips"])):
+		MAP["PirateShips"][i].AI()
+		MAP["PirateShips"][i].X
+		MAP["PirateShips"][i].draw()
+
+	#Player
 	drawShip = MAP["ships"][MAP["PlayerDir"]]
 	MAP["MainSurf"].blit(drawShip, MAP["PlayerPos"])
 	screenDisplay.blit(MAP["MainSurf"], [-MAP["ScreenPos"][0], -MAP["ScreenPos"][1]])
-	MapUI([MAP["WindDir"], MAP["WindSpeed"]])
+	#Ui
+	MapUI([MAP["WindDir"], MAP["WindSpeed"]], MAP["PirateShips"])
 
 
 def menu():
@@ -259,7 +278,7 @@ def miniMap(windDir, windSpeed):
 	lineP1 = (math.sin(windDir)*windSpeed*2, math.cos(windDir)*windSpeed*2)
 	pygame.draw.line(screenDisplay, (100,100, 120), (lineP1[0]+center[0], lineP1[1]+center[1]), (center[0], center[1]), 3)
 
-def MapUI(wind):
+def MapUI(wind, pirateShips):
 	miniMap(wind[0], wind[1])
 
 def dist(point1, point2):
