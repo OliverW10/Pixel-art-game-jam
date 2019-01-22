@@ -29,21 +29,25 @@ F.inventory = ['cannonball', 'birb', 'monkey']
 MAP["PirateShips"] = []
 MAP["AreaSize"] = [displayWidth * 5, displayHeight * 5]
 MAP["PlayerPos"] = [MAP["AreaSize"][0] / 2, MAP["AreaSize"][0] / 2]
+MAP["ScreenPos"] = [MAP["AreaSize"][0] / 2, MAP["AreaSize"][0] / 2]
+MAP["PlayerSpeed"] = [0, 0]
 MAP["PlayerDir"] = 0
 MAP["ShipDrawPos"] = [displayWidth / 2, displayHeight / 2]
 MAP["ActualDrawShip"] = MAP["ShipDrawPos"][:]
 MAP["waveList"] = []
+MAP["WindDir"] = random.randint(0,360) #in degrees beacuse its easier for me
+MAP["WindSpeed"] = random.randint(1,10)
 
 # Loading Sprites/images
 MAP.ships = [
 	loadImage("mapAssets/shipL.png"),
 	loadImage("mapAssets/shipUL.png"),
 	loadImage("mapAssets/shipU.png"),
-	None,
+	loadImage("mapAssets/shipUR.png"),
 	loadImage("mapAssets/shipR.png"),
-	None,
+	loadImage("mapAssets/shipDR.png"),
 	loadImage("mapAssets/shipD.png"),
-	None,
+	loadImage("mapAssets/shipDL.png"),
 ]
 
 MENU["ButtonPlay"] = loadImage("menuAssets/playButton.png")
@@ -62,7 +66,7 @@ class wave:
 		self.colour = (50,60,200)
 		self.delete = False
 		self.maxSize = 8
-		self.speed = 15
+		self.speed = 10
 
 	def draw(self):
 		if self.dir == "up":
@@ -74,6 +78,9 @@ class wave:
 			self.dir = "down"
 		if self.size < 0:
 			self.delete = True
+
+		self.X+=math.sin(MAP["WindDir"]*math.pi/180)*MAP["WindSpeed"]*frameTime
+		self.Y+=math.cos(MAP["WindDir"]*math.pi/180)*MAP["WindSpeed"]*frameTime
 		pygame.draw.polygon(MAP["MainSurf"], self.colour, ((self.X + self.size, self.Y), (self.X - self.size, self.Y), (self.X, self.Y - self.size)))
 
 
@@ -92,46 +99,55 @@ def map():
 	MAP["MainSurf"].fill((0, 0, 200))
 	pygame.draw.line(MAP["MainSurf"], (0, 0, 0), (0, 0), (MAP["AreaSize"][0], MAP["AreaSize"][1]))
 	pygame.draw.line(MAP["MainSurf"], (0, 0, 0), (MAP["AreaSize"][0], 0), (0, MAP["AreaSize"][1]))
-	if Keys["W"] == True:
-		MAP["PlayerPos"][1] -= frameTime * 100
-		MAP["PlayerDir"] = 2
-		MAP["ShipDrawPos"][1] = displayHeight * 0.46
+	if abs(sum(MAP["PlayerSpeed"]))<5:
+		if Keys["W"] == True:
+			MAP["PlayerSpeed"][1] -= frameTime * 2
+			MAP["PlayerDir"] = 2
 
-	if Keys["A"] == True:
-		MAP["PlayerPos"][0] -= frameTime * 100
-		MAP["PlayerDir"] = 0
-		MAP["ShipDrawPos"][0] = displayWidth * 0.46
+		if Keys["A"] == True:
+			MAP["PlayerSpeed"][0] -= frameTime * 2
+			MAP["PlayerDir"] = 0
 
-	if Keys["S"] == True:
-		MAP["PlayerPos"][1] += frameTime * 100
-		MAP["PlayerDir"] = 2  # 6
-		MAP["ShipDrawPos"][1] = displayHeight * 0.54
+		if Keys["S"] == True:
+			MAP["PlayerSpeed"][1] += frameTime * 2
+			MAP["PlayerDir"] = 2  # 6
 
-	if Keys["D"] == True:
-		MAP["PlayerPos"][0] += frameTime * 100
-		MAP["PlayerDir"] = 0  # 4
-		MAP["ShipDrawPos"][0] = displayWidth * 0.54
+		if Keys["D"] == True:
+			MAP["PlayerSpeed"][0] += frameTime * 2
+			MAP["PlayerDir"] = 0  # 4
 
-	if Keys["W"] == False and Keys["S"] == False:
-		MAP["ShipDrawPos"][1] = displayHeight * 0.5
+		if Keys["W"] == True and Keys["D"] == True:
+			MAP["PlayerDir"] = 3
 
-	if Keys["A"] == False and Keys["D"] == False:
-		MAP["ShipDrawPos"][0] = displayWidth * 0.5
+		if Keys["D"] == True and Keys["S"] == True:
+			MAP["PlayerDir"] = 5
 
+		if Keys["S"] == True and Keys["A"] == True:
+			MAP["PlayerDir"] = 7
 
+		if Keys["A"] == True and Keys["W"] == True:
+			MAP["PlayerDir"] = 1
+
+	MAP["PlayerSpeed"][0]-=MAP["PlayerSpeed"][0]*frameTime
+	MAP["PlayerSpeed"][1]-=MAP["PlayerSpeed"][1]*frameTime
+
+	MAP["PlayerPos"][0] += MAP["PlayerSpeed"][0]
+	MAP["PlayerPos"][1] += MAP["PlayerSpeed"][1] 
+
+	MAP["ScreenPos"]=[MAP["PlayerPos"][0]-displayWidth/2, MAP["PlayerPos"][1]-displayHeight/2]
+
+	#Waves
 	if random.randint(0,100) < 99:
 		MAP["waveList"].append(wave(MAP["PlayerPos"][0]+random.randint(-50, displayWidth+50),
 		 MAP["PlayerPos"][1]+random.randint(-50, displayHeight+50)))
 	for i in range(len(MAP["waveList"])):
 		MAP["waveList"][i].draw()
 	waveDeleter()
-	screenDisplay.blit(MAP["MainSurf"], [-MAP["PlayerPos"][0], -MAP["PlayerPos"][1]])
 	drawShip = MAP["ships"][MAP["PlayerDir"]]
-	MAP["ActualDrawShip"] = [
-		(MAP["ActualDrawShip"][0] + MAP["ShipDrawPos"][0] + MAP["ShipDrawPos"][0]) / 3,
-		(MAP["ActualDrawShip"][1] + MAP["ShipDrawPos"][1] + MAP["ShipDrawPos"][1]) / 3,
-	]
-	screenDisplay.blit(drawShip, MAP["ActualDrawShip"])
+	print(MAP["PlayerPos"])
+	MAP["MainSurf"].blit(drawShip, MAP["PlayerPos"])
+	screenDisplay.blit(MAP["MainSurf"], [-MAP["ScreenPos"][0], -MAP["ScreenPos"][1]])
+	miniMap()
 
 
 def menu():
@@ -183,6 +199,11 @@ def waveDeleter():
 			waveDeleter()
 			break
 
+def miniMap():
+	pygame.draw.circle(screenDisplay, (0,0,0), (round(displayWidth*0.1), round(displayHeight*0.9)), round(displayWidth*0.07), 2)
+
+def MapUI():
+	miniMap()
 # Main Loop
 while True:
 	startFrame = time.time()
