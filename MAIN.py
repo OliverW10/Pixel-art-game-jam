@@ -25,7 +25,8 @@ MAP = MENU = F = AttrDict({})
 Keys = {"W": False, "A": False, "S": False, "D": False, "E": False}
 F.inventory = ['cannonball', 'birb', 'monkey']
 
-# Areas
+# MAP variables
+
 MAP["PirateShips"] = []
 MAP["AreaSize"] = [displayWidth * 5, displayHeight * 5]
 MAP["PlayerPos"] = [MAP["AreaSize"][0] / 2, MAP["AreaSize"][0] / 2]
@@ -84,14 +85,28 @@ class wave:
 		pygame.draw.polygon(MAP["MainSurf"], self.colour, ((self.X + self.size, self.Y), (self.X - self.size, self.Y), (self.X, self.Y - self.size)))
 
 
-class pirateShip:
+class MapPirateShip:
 	def __init__(self, X, Y, power):
 		self.X = X
 		self.Y = Y
 		self.health = power
 		self.cannons = round(power/100)
-		self.goingTo = [random.randint(MAP["AreaSize"][0], MAP.AreaSize[1])]
+		self.goingTo = [random.randint(MAP["AreaSize"][0], MAP["AreaSize"][1])]
+	def AI(self):
+		if dist((self.X, self.Y), (self.goingTo[0], self.goingTo[1])) < 50 :
+			self.going = [random.randint(MAP["AreaSize"][0], MAP["AreaSize"][1])]
+		else:
+			if self.X > self.goingTo[0]:
+				self.X-=frameTime*5
+			if self.X < self.goingTo[0]:
+				self.X+=frameTime*5
+			if self.Y > self.goingTo[1]:
+				self.Y-=frameTime*5
+			if self.Y < self.goingTo[1]:
+				self.Y+=frameTime*5
 
+	def draw():
+		pass
 # GAME STATES (Functions)
 def map():
 	global MAP
@@ -147,7 +162,7 @@ def map():
 	print(MAP["PlayerPos"])
 	MAP["MainSurf"].blit(drawShip, MAP["PlayerPos"])
 	screenDisplay.blit(MAP["MainSurf"], [-MAP["ScreenPos"][0], -MAP["ScreenPos"][1]])
-	miniMap()
+	MapUI([MAP["WindDir"], MAP["WindSpeed"]])
 
 
 def menu():
@@ -199,11 +214,20 @@ def waveDeleter():
 			waveDeleter()
 			break
 
-def miniMap():
-	pygame.draw.circle(screenDisplay, (0,0,0), (round(displayWidth*0.1), round(displayHeight*0.9)), round(displayWidth*0.07), 2)
+def miniMap(windDir, windSpeed):
+	center=(round(displayWidth*0.1), round(displayHeight*0.9))
+	pygame.draw.circle(screenDisplay, (0,0,0), (center[0], center[1]), round(displayWidth*0.07), 2)
+	lineP1 = (math.sin(windDir)*windSpeed*2, math.cos(windDir)*windSpeed*2)
+	pygame.draw.line(screenDisplay, (100,100, 120), (lineP1[0]+center[0], lineP1[1]+center[1]), (center[0], center[1]), 3)
 
-def MapUI():
-	miniMap()
+def MapUI(wind):
+	miniMap(wind[0], wind[1])
+
+def dist(point1, point2):
+	X = abs(point1[0]-point2[0])
+	Y = abs(point1[1]-point2[1])
+	return math.sqrt(X**2+Y**2)
+
 # Main Loop
 while True:
 	startFrame = time.time()
