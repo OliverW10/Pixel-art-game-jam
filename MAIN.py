@@ -16,8 +16,8 @@ loadImage = pygame.image.load
 
 # AttrDict class
 class AttrDict(dict):
-    def __getattr__(self, attr):  return self[attr]
-    def __setattr__(self, attr, value):  self[attr] = value
+	def __getattr__(self, attr):  return self[attr]
+	def __setattr__(self, attr, value):  self[attr] = value
 
 # Variables
 gameState = "Menu"
@@ -39,8 +39,6 @@ MAP["waveList"] = []
 MAP["WindDir"] = random.randint(0,360) #in degrees beacuse its easier for me
 MAP["WindSpeed"] = random.randint(1,10)
 MAP["screenRect"] = pygame.Rect(-25, -25, displayWidth+50, displayHeight+50)
-#Surfaces
-MAP["MainSurf"] = pygame.Surface(MAP["AreaSize"])  # is shifted -playerPos, anything draw on here will be relative to world
 
 # Loading Sprites/images
 MAP.ships = [
@@ -92,7 +90,9 @@ class wave:
 
 		self.X+=math.sin(MAP["WindDir"]*math.pi/180)*MAP["WindSpeed"]*frameTime
 		self.Y+=math.cos(MAP["WindDir"]*math.pi/180)*MAP["WindSpeed"]*frameTime
-		pygame.draw.polygon(MAP["MainSurf"], self.colour, ((self.X + self.size, self.Y), (self.X - self.size, self.Y), (self.X, self.Y - self.size)))
+		pygame.draw.polygon(screenDisplay, self.colour, ((self.X + self.size - MAP["ScreenPos"][0], self.Y - MAP["ScreenPos"][1]), 
+			(self.X - self.size - MAP["ScreenPos"][0], self.Y- MAP["ScreenPos"][1]),
+			(self.X - MAP["ScreenPos"][0], self.Y - self.size - MAP["ScreenPos"][1])))
 
 
 class MapPirateShip:
@@ -106,13 +106,13 @@ class MapPirateShip:
 		self.state = "wander" #can also be attack and retreat
 		self.dir = 0
 
-		if power > 5 and power < 10:
+		if power >= 5 and power < 10:
 			self.type = "verySmall"
-		if power > 10 and power< 20:
+		if power >= 10 and power < 20:
 			self.type = "small"
-		if power > 20 and power < 35:
+		if power >= 20 and power < 35:
 			self.type = "med"
-		if power > 35 and power < 50:
+		if power >= 35 and power < 50:
 			self.type="large"
 		if power == 60:
 			self.type = "boss"
@@ -151,19 +151,24 @@ class MapPirateShip:
 			self.goingTo == MAP["PlayerPos"]
 
 	def draw(self):
-		MAP["MainSurf"].blit(MAP["pirateShipsSprites"][self.type][self.dir], (self.X, self.Y))
+		drawX = self.X - MAP["ScreenPos"][0]
+		drawY = self.Y - MAP["ScreenPos"][1]
+
+		if drawX>-20 and drawX<displayWidth+20 and drawY>-20 and drawY<displayHeight+20:
+			pass
+			
+		screenDisplay.blit(MAP["pirateShipsSprites"][self.type][self.dir], (drawX, drawY))
 		
 
-for i in range(25):
-	MAP["PirateShips"].append( MapPirateShip(random.randint(0, MAP["AreaSize"][0]), random.randint(0, MAP["AreaSize"][1]), 7))
+for i in range(5000):
+	MAP["PirateShips"].append( MapPirateShip(random.randint(0, MAP["AreaSize"][0]), random.randint(0, MAP["AreaSize"][1]), random.randint(5,19)))
 
 # GAME STATES (Functions)
 def map():
 	global MAP
 	
-	MAP["MainSurf"].fill((0, 0, 200))
-	pygame.draw.line(MAP["MainSurf"], (0, 0, 0), (0, 0), (MAP["AreaSize"][0], MAP["AreaSize"][1]))
-	pygame.draw.line(MAP["MainSurf"], (0, 0, 0), (MAP["AreaSize"][0], 0), (0, MAP["AreaSize"][1]))
+	pygame.draw.line(screenDisplay, (0, 0, 0), (0 - MAP["ScreenPos"][0], 0 - MAP["ScreenPos"][1]), (MAP["AreaSize"][0] - MAP["ScreenPos"][0], MAP["AreaSize"][1] - MAP["ScreenPos"][1]))
+	pygame.draw.line(screenDisplay, (0, 0, 0), (MAP["AreaSize"][0] - MAP["ScreenPos"][0], 0 - MAP["ScreenPos"][1]), (0 - MAP["ScreenPos"][0], MAP["AreaSize"][1] - MAP["ScreenPos"][1]))
 	if abs(sum(MAP["PlayerSpeed"]))<4:
 		if Keys["W"] == True:
 			MAP["PlayerSpeed"][1] -= frameTime * 1
@@ -196,13 +201,13 @@ def map():
 	MAP["PlayerSpeed"][0]-=MAP["PlayerSpeed"][0]*frameTime
 	MAP["PlayerSpeed"][1]-=MAP["PlayerSpeed"][1]*frameTime
 
-	MAP["PlayerPos"][0] += MAP["PlayerSpeed"][0]
-	MAP["PlayerPos"][1] += MAP["PlayerSpeed"][1] 
+	MAP["PlayerPos"][0] += MAP["PlayerSpeed"][0]*frameTime*30
+	MAP["PlayerPos"][1] += MAP["PlayerSpeed"][1]*frameTime*30
 
 	MAP["ScreenPos"]=[MAP["PlayerPos"][0]-displayWidth/2, MAP["PlayerPos"][1]-displayHeight/2]
 
 	#Waves
-	if random.randint(0,100) < 99:
+	if random.randint(0,100) < 50:
 		MAP["waveList"].append(wave(MAP["PlayerPos"][0]+random.randint(-displayWidth/2-50, displayWidth/2+50),
 		MAP["PlayerPos"][1]+random.randint(-displayHeight/2-50, displayHeight/2+50)))
 	for i in range(len(MAP["waveList"])):
@@ -217,8 +222,7 @@ def map():
 
 	#Player
 	drawShip = MAP["ships"][MAP["PlayerDir"]]
-	MAP["MainSurf"].blit(drawShip, MAP["PlayerPos"])
-	screenDisplay.blit(MAP["MainSurf"], [-MAP["ScreenPos"][0], -MAP["ScreenPos"][1]])
+	screenDisplay.blit(drawShip, (MAP["PlayerPos"][0] - MAP["ScreenPos"][0], MAP["PlayerPos"][1] - MAP["ScreenPos"][1]))
 	#Ui
 	MapUI([MAP["WindDir"], MAP["WindSpeed"]], MAP["PirateShips"])
 
@@ -289,7 +293,7 @@ def dist(point1, point2):
 # Main Loop
 while True:
 	startFrame = time.time()
-	screenDisplay.fill((0, 0, 0))
+	screenDisplay.fill((0, 0, 200))
 	mouseButtons = pygame.mouse.get_pressed()  # (left mouse button, middle, right)
 	mousePos = pygame.mouse.get_pos()  # (x, y)
 
@@ -304,6 +308,7 @@ while True:
 			if event.key == pygame.K_a: Keys["A"] = True
 			if event.key == pygame.K_s: Keys["S"] = True
 			if event.key == pygame.K_d: Keys["D"] = True
+			if event.key == pygame.K_f: print(clock.get_fps())
 
 		if event.type == pygame.KEYUP:
 			if event.key == pygame.K_w: Keys["W"] = False
@@ -317,5 +322,5 @@ while True:
 		map()
 
 	pygame.display.update()
-	clock.tick(60)
+	clock.tick()
 	frameTime = time.time() - startFrame
