@@ -29,7 +29,6 @@ F.inventory = ['cannonball', 'birb', 'monkey']
 
 MAP["PirateShips"] = []
 MAP["AreaSize"] = [displayWidth * 3, displayHeight * 3]
-print(MAP["AreaSize"])
 MAP["PlayerPos"] = [MAP["AreaSize"][0] / 2, MAP["AreaSize"][0] / 2]
 MAP["ScreenPos"] = [MAP["AreaSize"][0] / 2, MAP["AreaSize"][0] / 2]
 MAP["PlayerSpeed"] = [0, 0]
@@ -57,10 +56,8 @@ for i in islands:
 	MAP["LandBlocks"][i] = 3
 
 for i in range(1000):
-	print(MAP["LandBlocks"].keys())
 	points = MAP["LandBlocks"].keys()
 	points = list(points)
-	print(points)
 	point = random.choice(points)
 	x = int(point.split(",")[0])
 	y = int(point.split(",")[1])
@@ -72,10 +69,8 @@ for i in range(1000):
 		MAP["LandBlocks"][str(x)+","+str(y)] = 2
 
 for i in range(200):
-	print(MAP["LandBlocks"].keys())
 	points = MAP["LandBlocks"].keys()
 	points = list(points)
-	print(points)
 	point = random.choice(points)
 	x = int(point.split(",")[0])
 	y = int(point.split(",")[1])
@@ -162,16 +157,17 @@ class wave:
 		screenDisplay.blit(MAP.waves[self.size], (self.X - MAP["ScreenPos"][0], self.Y - MAP["ScreenPos"][1]))
 
 
-class MapPirateShip:
+class PirateShip:
 	def __init__(self, X, Y, power): #power 5-10 very small,  10-20 small, 20-35 med 35-50 large, boss is 60
 		self.X = X
 		self.Y = Y
-		self.mapHealth = power*10
-		self.health = power*10
 		self.goingTo = [random.randint(0, MAP["AreaSize"][0]), random.randint(0, MAP["AreaSize"][1])]
 		self.speed = (power+75)/7
 		self.state = "wander" #can also be attack and retreat
 		self.dir = 0
+		self.HP = power*10
+		self.maxHP = power*10
+		self.hovered = False
 
 		if power >= 5 and power < 10:
 			self.type = "verySmall"
@@ -218,18 +214,24 @@ class MapPirateShip:
 			self.goingTo == MAP["PlayerPos"]
 
 	def draw(self):
-		drawX = self.X - MAP["ScreenPos"][0]
-		drawY = self.Y - MAP["ScreenPos"][1]
+		self.drawX = self.X - MAP["ScreenPos"][0]
+		self.drawY = self.Y - MAP["ScreenPos"][1]
 
-		if drawX>-20 and drawX<displayWidth+20 and drawY>-20 and drawY<displayHeight+20: # this for some reason makes it run 10-20% worse
-			screenDisplay.blit(MAP["pirateShipsSprites"][self.type][self.dir], (drawX, drawY))
+		if dist((self.drawX, self.drawY), (mousePos[0], mousePos[1])) < 50:
+			self.hovered = True
+			pygame.draw.rect(screenDisplay, (0, 0, 0), (self.drawX-5, self.drawY-10, (self.HP / self.maxHP) * 40, 5))
+		else:
+			self.hovered = False
+		if self.drawX>-20 and self.drawX<displayWidth+20 and self.drawY>-20 and self.drawY<displayHeight+20: # this for some reason makes it run 10-20% worse
+			screenDisplay.blit(MAP["pirateShipsSprites"][self.type][self.dir], (self.drawX, self.drawY))
 		
 for i in range(10):
-	MAP["PirateShips"].append( MapPirateShip(random.randint(0, MAP["AreaSize"][0]), random.randint(0, MAP["AreaSize"][1]), random.randint(5,19)))
+	MAP["PirateShips"].append( PirateShip(random.randint(0, MAP["AreaSize"][0]), random.randint(0, MAP["AreaSize"][1]), random.randint(5,19)))
 
 # GAME STATES (Functions)
 def map():
 	global MAP
+	global gameState
 	pygame.draw.rect(screenDisplay, (0,0,0), (-MAP["ScreenPos"][0], -MAP["ScreenPos"][1], MAP["AreaSize"][0], MAP["AreaSize"][1]), 5)
 	pygame.draw.line(screenDisplay, (0, 0, 0), (0 - MAP["ScreenPos"][0], 0 - MAP["ScreenPos"][1]), (MAP["AreaSize"][0] - MAP["ScreenPos"][0], MAP["AreaSize"][1] - MAP["ScreenPos"][1]))
 	pygame.draw.line(screenDisplay, (0, 0, 0), (MAP["AreaSize"][0] - MAP["ScreenPos"][0], 0 - MAP["ScreenPos"][1]), (0 - MAP["ScreenPos"][0], MAP["AreaSize"][1] - MAP["ScreenPos"][1]))
@@ -269,7 +271,16 @@ def map():
 	MAP["PlayerPos"][1] += MAP["PlayerSpeed"][1]*frameTime*30
 
 	MAP["ScreenPos"]=[MAP["PlayerPos"][0]-displayWidth/2, MAP["PlayerPos"][1]-displayHeight/2]
+	#Logic
+	#Into fight
+	for i in range(len(MAP["PirateShips"])):
+		if MAP["PirateShips"][i].hovered == True:
+			distance = dist((round(MAP["PlayerPos"][0]), round(MAP["PlayerPos"][1])), (MAP["PirateShips"][i].X, MAP["PirateShips"][i].Y))
+			if distance < 100 and mouseButtons[0] == True:
+				gameState = "Fight"
+				print(gameState)
 
+	#Drawing
 	#Waves
 	MAP["WaveSpawnTimer"] += frameTime
 	if  MAP["WaveSpawnTimer"]>0.1:
@@ -399,6 +410,9 @@ while True:
 
 	if gameState == "Map":
 		map()
+
+	if gameState == "Fight":
+		battleScreen() #dont know wether to do a fight in the map screen or one in the battle screen or both or a combination
 
 	pygame.display.update()
 	clock.tick()
