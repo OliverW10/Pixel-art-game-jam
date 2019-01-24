@@ -28,7 +28,7 @@ F.inventory = ['cannonball', 'birb', 'monkey']
 # MAP variables
 
 MAP["PirateShips"] = []
-MAP["AreaSize"] = [displayWidth * 5, displayHeight * 5]
+MAP["AreaSize"] = [displayWidth * 3, displayHeight * 3]
 print(MAP["AreaSize"])
 MAP["PlayerPos"] = [MAP["AreaSize"][0] / 2, MAP["AreaSize"][0] / 2]
 MAP["ScreenPos"] = [MAP["AreaSize"][0] / 2, MAP["AreaSize"][0] / 2]
@@ -40,14 +40,52 @@ MAP["waveList"] = []
 MAP["WindDir"] = math.pi*1.5#random.randint(0, round(math.pi*2)) #in degrees beacuse its easier for me
 MAP["WindSpeed"] = 20 #random.randint(1,10)
 MAP["screenRect"] = pygame.Rect(-25, -25, displayWidth+50, displayHeight+50)
-MAP["LandMasses"] = {} #List of all peices of land each land is 10x10px
+MAP["LandBlocks"] = {} #List of all peices of land each land is 25x25px
 #Land masses is a 400x300 array or dictionay
-# 1 is sand, 2 is land, 3 is town/port
+# 1 is sand, 2 is land, 3 is town and 4 is port
 MAP["WaveSpawnTimer"] = 0
 
 #Random generation
-for i in range(100):
-	MAP["LandMasses"][str(random.randint(0, MAP["AreaSize"][0]))+","+str(random.randint(0, MAP["AreaSize"][0]))] = random.randint(1,3)
+islands = {}
+islandNum=random.randint(3, 5)
+
+for i in range(islandNum):
+	town = str(random.randint(0, round(MAP["AreaSize"][0]/25))*25)+","+str(random.randint(0, round(MAP["AreaSize"][0]/25))*25)
+	islands[town] = 1
+
+for i in islands:
+	MAP["LandBlocks"][i] = 3
+
+for i in range(1000):
+	print(MAP["LandBlocks"].keys())
+	points = MAP["LandBlocks"].keys()
+	points = list(points)
+	print(points)
+	point = random.choice(points)
+	x = int(point.split(",")[0])
+	y = int(point.split(",")[1])
+	x += random.randint(-1, 1)*25
+	y += random.randint(-1, 1)*25
+	if str(x)+","+str(y) in MAP["LandBlocks"]:
+		pass
+	else:
+		MAP["LandBlocks"][str(x)+","+str(y)] = 2
+
+for i in range(200):
+	print(MAP["LandBlocks"].keys())
+	points = MAP["LandBlocks"].keys()
+	points = list(points)
+	print(points)
+	point = random.choice(points)
+	x = int(point.split(",")[0])
+	y = int(point.split(",")[1])
+	x += random.randint(-1, 1)*25
+	y += random.randint(-1, 1)*25
+	if str(x)+","+str(y) in MAP["LandBlocks"]:
+		pass
+	else:
+		MAP["LandBlocks"][str(x)+","+str(y)] = 1
+
 
 # Loading Sprites/images
 MAP.ships = [
@@ -186,7 +224,7 @@ class MapPirateShip:
 		if drawX>-20 and drawX<displayWidth+20 and drawY>-20 and drawY<displayHeight+20: # this for some reason makes it run 10-20% worse
 			screenDisplay.blit(MAP["pirateShipsSprites"][self.type][self.dir], (drawX, drawY))
 		
-for i in range(100):
+for i in range(10):
 	MAP["PirateShips"].append( MapPirateShip(random.randint(0, MAP["AreaSize"][0]), random.randint(0, MAP["AreaSize"][1]), random.randint(5,19)))
 
 # GAME STATES (Functions)
@@ -244,17 +282,17 @@ def map():
 	waveDeleter()
 
 	#Land
-	for pos in MAP["LandMasses"]:
-		if MAP["LandMasses"][pos] == 1:
+	for pos in MAP["LandBlocks"]:
+		if MAP["LandBlocks"][pos] == 1:
 			colour = (255, 200, 10)
-		if MAP["LandMasses"][pos] == 2:
+		if MAP["LandBlocks"][pos] == 2:
 			colour = (0, 255, 0)
-		if MAP["LandMasses"][pos] == 3:
+		if MAP["LandBlocks"][pos] == 3:
 			colour = (210,105,30)
-		x = int(pos.split(",")[0]) * 10 - MAP["ScreenPos"][0]
-		y = int(pos.split(",")[1]) * 10 - MAP["ScreenPos"][1]
-		if x > -10 and x < displayWidth and y > -10 and y < displayHeight:
-			pygame.draw.rect(screenDisplay, (colour), (x, y, 10, 10))
+		x = int(pos.split(",")[0])  - MAP["ScreenPos"][0]
+		y = int(pos.split(",")[1])  - MAP["ScreenPos"][1]
+		if x > -25 and x < displayWidth and y > -25 and y < displayHeight:
+			pygame.draw.rect(screenDisplay, (colour), (x, y, 25, 25))
 	#Pirates
 	for i in range(len(MAP["PirateShips"])):
 		MAP["PirateShips"][i].AI()
