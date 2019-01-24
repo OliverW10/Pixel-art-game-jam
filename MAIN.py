@@ -29,6 +29,7 @@ F.inventory = ['cannonball', 'birb', 'monkey']
 
 MAP["PirateShips"] = []
 MAP["AreaSize"] = [displayWidth * 5, displayHeight * 5]
+print(MAP["AreaSize"])
 MAP["PlayerPos"] = [MAP["AreaSize"][0] / 2, MAP["AreaSize"][0] / 2]
 MAP["ScreenPos"] = [MAP["AreaSize"][0] / 2, MAP["AreaSize"][0] / 2]
 MAP["PlayerSpeed"] = [0, 0]
@@ -36,31 +37,58 @@ MAP["PlayerDir"] = 0
 MAP["ShipDrawPos"] = [displayWidth / 2, displayHeight / 2]
 MAP["ActualDrawShip"] = MAP["ShipDrawPos"][:]
 MAP["waveList"] = []
-MAP["WindDir"] = random.randint(0,360) #in degrees beacuse its easier for me
-MAP["WindSpeed"] = random.randint(1,10)
+MAP["WindDir"] = math.pi*1.5#random.randint(0, round(math.pi*2)) #in degrees beacuse its easier for me
+MAP["WindSpeed"] = 20 #random.randint(1,10)
 MAP["screenRect"] = pygame.Rect(-25, -25, displayWidth+50, displayHeight+50)
+MAP["LandMasses"] = {} #List of all peices of land each land is 10x10px
+#Land masses is a 400x300 array or dictionay
+# 1 is sand, 2 is land, 3 is town/port
+MAP["WaveSpawnTimer"] = 0
+
+#Random generation
+for i in range(100):
+	MAP["LandMasses"][str(random.randint(0, MAP["AreaSize"][0]))+","+str(random.randint(0, MAP["AreaSize"][0]))] = random.randint(1,3)
 
 # Loading Sprites/images
 MAP.ships = [
-	loadImage("mapAssets/shipL.png"),
-	loadImage("mapAssets/shipUL.png"),
-	loadImage("mapAssets/shipU.png"),
-	loadImage("mapAssets/shipUR.png"),
-	loadImage("mapAssets/shipR.png"),
-	loadImage("mapAssets/shipDR.png"),
-	loadImage("mapAssets/shipD.png"),
-	loadImage("mapAssets/shipDL.png"),
+	loadImage("mapAssets/Player/shipL.png"),
+	loadImage("mapAssets/Player/shipUL.png"),
+	loadImage("mapAssets/Player/shipU.png"),
+	loadImage("mapAssets/Player/shipUR.png"),
+	loadImage("mapAssets/Player/shipR.png"),
+	loadImage("mapAssets/Player/shipDR.png"),
+	loadImage("mapAssets/Player/shipD.png"),
+	loadImage("mapAssets/Player/shipDL.png"),
 ]
+
+MAP.waves = [
+	loadImage("mapAssets/Waves/wave1.png"),
+	loadImage("mapAssets/Waves/wave2.png"),
+	loadImage("mapAssets/Waves/wave3.png"),
+	loadImage("mapAssets/Waves/wave4.png")]
+
+def doubleSizeList(list):
+	newList = []
+	for i in range(len(list)):
+		size = list[i].get_rect().size
+		newList.append(pygame.transform.scale(list[i], (size[0]*2, size[1]*2)))
+	return newList
+
 MAP["pirateShipsSprites"] = {"verySmall" : [
-	loadImage("mapAssets/pirateVSmallL.png"),
-	loadImage("mapAssets/pirateVSmallU.png"),
-	loadImage("mapAssets/pirateVSmallR.png"),
-	loadImage("mapAssets/pirateVSmallD.png")
+	loadImage("mapAssets/Pirates/verySmall/pirateVSmallL.png"),
+	loadImage("mapAssets/Pirates/verySmall/pirateVSmallU.png"),
+	loadImage("mapAssets/Pirates/verySmall/pirateVSmallR.png"),
+	loadImage("mapAssets/Pirates/verySmall/pirateVSmallD.png")
 ], "small" : [
-	loadImage("mapAssets/pirateSmallL.png"),
-	loadImage("mapAssets/pirateSmallU.png"),
-	loadImage("mapAssets/pirateSmallR.png"),
-	loadImage("mapAssets/pirateSmallD.png")]}
+	loadImage("mapAssets/Pirates/small/pirateSmallL.png"),
+	loadImage("mapAssets/Pirates/small/pirateSmallU.png"),
+	loadImage("mapAssets/Pirates/small/pirateSmallR.png"),
+	loadImage("mapAssets/Pirates/small/pirateSmallD.png")]}
+
+MAP["pirateShipsSprites"]["verySmall"] = doubleSizeList(MAP["pirateShipsSprites"]["verySmall"])
+MAP["pirateShipsSprites"]["small"] = doubleSizeList(MAP["pirateShipsSprites"]["small"])
+MAP.ships = doubleSizeList(MAP.ships)
+#MAP.waves = doubleSizeList(MAP.waves)
 
 MENU["ButtonPlay"] = loadImage("menuAssets/playButton.png")
 MENU["ButtonOptions"] = loadImage("menuAssets/optionsButton.png")
@@ -70,29 +98,30 @@ class wave:
 	def __init__(self, X, Y):
 		self.X = X
 		self.Y = Y
-		self.size = 1
+		self.size = 0
 		self.dir = "up"
 		self.colour = (50,60,200)
 		self.delete = False
-		self.maxSize = 8
-		self.speed = 10
+		self.surface = pygame.Surface((8, 4))
+		self.timer = 0
 
 	def draw(self):
-		if self.dir == "up":
-			self.size += frameTime * self.speed
-		else:
-			self.size -= frameTime * self.speed
+		self.timer+=frameTime
+		if self.timer > 0.2:
+			self.timer = 0
+			if self.dir == "up":
+				self.size += 1
+			else:
+				self.size -= 1
 
-		if self.size > self.maxSize:
-			self.dir = "down"
-		if self.size < 0:
-			self.delete = True
+			if self.size >= 3:
+				self.dir = "down"
+			if self.size <= 0:
+				self.delete = True
 
-		self.X+=math.sin(MAP["WindDir"]*math.pi/180)*MAP["WindSpeed"]*frameTime
-		self.Y+=math.cos(MAP["WindDir"]*math.pi/180)*MAP["WindSpeed"]*frameTime
-		pygame.draw.polygon(screenDisplay, self.colour, ((self.X + self.size - MAP["ScreenPos"][0], self.Y - MAP["ScreenPos"][1]), 
-			(self.X - self.size - MAP["ScreenPos"][0], self.Y- MAP["ScreenPos"][1]),
-			(self.X - MAP["ScreenPos"][0], self.Y - self.size - MAP["ScreenPos"][1])))
+		self.X+=math.sin(MAP["WindDir"])*MAP["WindSpeed"]*frameTime
+		self.Y+=math.cos(MAP["WindDir"])*MAP["WindSpeed"]*frameTime
+		screenDisplay.blit(MAP.waves[self.size], (self.X - MAP["ScreenPos"][0], self.Y - MAP["ScreenPos"][1]))
 
 
 class MapPirateShip:
@@ -154,36 +183,33 @@ class MapPirateShip:
 		drawX = self.X - MAP["ScreenPos"][0]
 		drawY = self.Y - MAP["ScreenPos"][1]
 
-		if drawX>-20 and drawX<displayWidth+20 and drawY>-20 and drawY<displayHeight+20:
-			pass
-			
-		screenDisplay.blit(MAP["pirateShipsSprites"][self.type][self.dir], (drawX, drawY))
+		if drawX>-20 and drawX<displayWidth+20 and drawY>-20 and drawY<displayHeight+20: # this for some reason makes it run 10-20% worse
+			screenDisplay.blit(MAP["pirateShipsSprites"][self.type][self.dir], (drawX, drawY))
 		
-
-for i in range(5000):
+for i in range(100):
 	MAP["PirateShips"].append( MapPirateShip(random.randint(0, MAP["AreaSize"][0]), random.randint(0, MAP["AreaSize"][1]), random.randint(5,19)))
 
 # GAME STATES (Functions)
 def map():
 	global MAP
-	
+	pygame.draw.rect(screenDisplay, (0,0,0), (-MAP["ScreenPos"][0], -MAP["ScreenPos"][1], MAP["AreaSize"][0], MAP["AreaSize"][1]), 5)
 	pygame.draw.line(screenDisplay, (0, 0, 0), (0 - MAP["ScreenPos"][0], 0 - MAP["ScreenPos"][1]), (MAP["AreaSize"][0] - MAP["ScreenPos"][0], MAP["AreaSize"][1] - MAP["ScreenPos"][1]))
 	pygame.draw.line(screenDisplay, (0, 0, 0), (MAP["AreaSize"][0] - MAP["ScreenPos"][0], 0 - MAP["ScreenPos"][1]), (0 - MAP["ScreenPos"][0], MAP["AreaSize"][1] - MAP["ScreenPos"][1]))
 	if abs(sum(MAP["PlayerSpeed"]))<4:
 		if Keys["W"] == True:
-			MAP["PlayerSpeed"][1] -= frameTime * 1
+			MAP["PlayerSpeed"][1] -= frameTime * 2
 			MAP["PlayerDir"] = 2
 
 		if Keys["A"] == True:
-			MAP["PlayerSpeed"][0] -= frameTime * 1
+			MAP["PlayerSpeed"][0] -= frameTime * 2
 			MAP["PlayerDir"] = 0
 
 		if Keys["S"] == True:
-			MAP["PlayerSpeed"][1] += frameTime * 1
+			MAP["PlayerSpeed"][1] += frameTime * 2
 			MAP["PlayerDir"] = 2  # 6
 
 		if Keys["D"] == True:
-			MAP["PlayerSpeed"][0] += frameTime * 1
+			MAP["PlayerSpeed"][0] += frameTime * 2
 			MAP["PlayerDir"] = 0  # 4
 
 		if Keys["W"] == True and Keys["D"] == True:
@@ -207,13 +233,28 @@ def map():
 	MAP["ScreenPos"]=[MAP["PlayerPos"][0]-displayWidth/2, MAP["PlayerPos"][1]-displayHeight/2]
 
 	#Waves
-	if random.randint(0,100) < 50:
+	MAP["WaveSpawnTimer"] += frameTime
+	if  MAP["WaveSpawnTimer"]>0.1:
+		MAP["WaveSpawnTimer"] = 0
 		MAP["waveList"].append(wave(MAP["PlayerPos"][0]+random.randint(-displayWidth/2-50, displayWidth/2+50),
-		MAP["PlayerPos"][1]+random.randint(-displayHeight/2-50, displayHeight/2+50)))
+									MAP["PlayerPos"][1]+random.randint(-displayHeight/2-50, displayHeight/2+50)))
+
 	for i in range(len(MAP["waveList"])):
 		MAP["waveList"][i].draw()
 	waveDeleter()
 
+	#Land
+	for pos in MAP["LandMasses"]:
+		if MAP["LandMasses"][pos] == 1:
+			colour = (255, 200, 10)
+		if MAP["LandMasses"][pos] == 2:
+			colour = (0, 255, 0)
+		if MAP["LandMasses"][pos] == 3:
+			colour = (210,105,30)
+		x = int(pos.split(",")[0]) * 10 - MAP["ScreenPos"][0]
+		y = int(pos.split(",")[1]) * 10 - MAP["ScreenPos"][1]
+		if x > -10 and x < displayWidth and y > -10 and y < displayHeight:
+			pygame.draw.rect(screenDisplay, (colour), (x, y, 10, 10))
 	#Pirates
 	for i in range(len(MAP["PirateShips"])):
 		MAP["PirateShips"][i].AI()
