@@ -130,6 +130,9 @@ MENU["ButtonPlay"] = loadImage("menuAssets/playButton.png")
 MENU["ButtonOptions"] = loadImage("menuAssets/optionsButton.png")
 MENU["ButtonQuit"] = loadImage("menuAssets/quitButton.png")
 
+PREP["Gun"] = loadImage("items/pistol.png")
+PREP["CannonBall"] = loadImage("items/cannonBall.png")
+
 class wave:
 	def __init__(self, X, Y):
 		self.X = X
@@ -383,11 +386,22 @@ def MapUI(wind, pirateShips):
 
 def prepMenu(playerCargo, enemyCargo):
 	pygame.draw.rect(screenDisplay, (0,0,0), (displayWidth*0.01, displayHeight*0.3, displayWidth*0.3, displayHeight*0.6), 2)
+	screenDisplay.blit(PREP["Gun"], (100,400))
 
 def dist(point1, point2):
 	X = abs(point1[0]-point2[0])
 	Y = abs(point1[1]-point2[1])
 	return math.sqrt(X**2+Y**2)
+
+def text_objects(message, font, colour):
+	textSurface = font.render(message, True, colour)
+	return textSurface, textSurface.get_rect()
+
+def game_print(message, posX, posY, size, colour):
+	text=pygame.font.SysFont("smalle", round(size*1.5))
+	text_surf, text_rect = text_objects(message, text, colour)
+	text_rect.center = (posX, posY)
+	gameDisplay.blit(text_surf, text_rect)
 
 # Main Loop
 while True:
