@@ -1,15 +1,15 @@
-```Things to add```
+# Things to add
 
-# GENERAL #
+``` GENERAL ```
 - More weird stuff
 - Possible to lose
 - Work on UI
 - Make sprites
 
-# MENU #
+``` MENU ```
 - Add options menu
 
-# MAP #
+``` MAP ```
 - Add sprites for land
 - Collisions between ships & land
 - Ports
@@ -18,11 +18,11 @@
 - Need to have gold to upgrade ship when sinking
 - Move slower in water when damaged
 
-# TRANSITION #
+``` TRANSITION ```
 - Add prep phaze (UI)
 - Work on UI in general
 
-# SHIPFIGHT #
+``` SHIPFIGHT ```
 - Shark to deflect oncoming missiles
 - Octopus to smash opponents hull
 - Add mortar (dot trail for aim)

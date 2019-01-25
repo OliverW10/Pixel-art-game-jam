@@ -1,11 +1,8 @@
+import copy
 import math
 import time
 import random
-from contextlib import redirect_stdout
-import copy
-
-with redirect_stdout(None):
-	import pygame  # No console message
+import pygame
 
 # Init
 displayWidth, displayHeight = 800, 600
@@ -21,8 +18,10 @@ class AttrDict(dict):
 	def __setattr__(self, attr, value):  self[attr] = value
 
 # Variables
+global gameState
 gameState = "Menu"
-MAP = MENU = F = PREP = AttrDict({})
+global MAP, MENU, F, PREP, SETTINGS
+MAP = MENU = F = PREP = SETTINGS = AttrDict({})
 Keys = {"W": False, "A": False, "S": False, "D": False, "E": False}
 F.inventory = ['cannonball', 'birb', 'monkey']
 
@@ -44,9 +43,9 @@ MAP["screenRect"] = pygame.Rect(-25, -25, displayWidth+50, displayHeight+50)
 MAP["LandBlocks"] = {} #List of all peices of land each land is 25x25px
 #Land masses is a 400x300 array or dictionay
 # 1 is sand, 2 is land, 3 is town and 4 is port
-MAP["WaveSpawnTimer"] = 0
+MAP.WaveSpawnTimer = 0
 
-PREP["EnemyCargo"] = {}
+PREP.EnemyCargo = {}
 #Random generation
 islands = {}
 islandNum=random.randint(3, 5)
@@ -110,18 +109,18 @@ def doubleSizeList(list):
 		newList.append(pygame.transform.scale(list[i], (size[0]*2, size[1]*2)))
 	return newList
 
-MAP["pirateShipsSprites"] = {"verySmall" : [
-	loadImage("mapAssets/Pirates/verySmall/pirateVSmallL.png"),
-	loadImage("mapAssets/Pirates/verySmall/pirateVSmallU.png"),
-	loadImage("mapAssets/Pirates/verySmall/pirateVSmallR.png"),
-	loadImage("mapAssets/Pirates/verySmall/pirateVSmallD.png")
+MAP["pirateShipsSprites"] = {"tiny" : [
+	loadImage("mapAssets/Pirates/tiny/pirateVSmallL.png"),
+	loadImage("mapAssets/Pirates/tiny/pirateVSmallU.png"),
+	loadImage("mapAssets/Pirates/tiny/pirateVSmallR.png"),
+	loadImage("mapAssets/Pirates/tiny/pirateVSmallD.png")
 ], "small" : [
 	loadImage("mapAssets/Pirates/small/pirateSmallL.png"),
 	loadImage("mapAssets/Pirates/small/pirateSmallU.png"),
 	loadImage("mapAssets/Pirates/small/pirateSmallR.png"),
 	loadImage("mapAssets/Pirates/small/pirateSmallD.png")]}
 
-MAP["pirateShipsSprites"]["verySmall"] = doubleSizeList(MAP["pirateShipsSprites"]["verySmall"])
+MAP["pirateShipsSprites"]["tiny"] = doubleSizeList(MAP["pirateShipsSprites"]["tiny"])
 MAP["pirateShipsSprites"]["small"] = doubleSizeList(MAP["pirateShipsSprites"]["small"])
 MAP.ships = doubleSizeList(MAP.ships)
 #MAP.waves = doubleSizeList(MAP.waves)
@@ -145,7 +144,7 @@ class wave:
 		self.timer = 0
 
 	def draw(self):
-		self.timer+=frameTime
+		self.timer += frameTime
 		if self.timer > 0.2:
 			self.timer = 0
 			if self.dir == "up":
@@ -158,34 +157,29 @@ class wave:
 			if self.size <= 0:
 				self.delete = True
 
-		self.X+=math.sin(MAP["WindDir"])*MAP["WindSpeed"]*frameTime
-		self.Y+=math.cos(MAP["WindDir"])*MAP["WindSpeed"]*frameTime
+		self.X += math.sin(MAP["WindDir"])*MAP["WindSpeed"]*frameTime
+		self.Y += math.cos(MAP["WindDir"])*MAP["WindSpeed"]*frameTime
 		screenDisplay.blit(MAP.waves[self.size], (self.X - MAP["ScreenPos"][0], self.Y - MAP["ScreenPos"][1]))
 
 
 class PirateShip:
-	def __init__(self, X, Y, power): #power 5-10 very small,  10-20 small, 20-35 med 35-50 large, boss is 60
+	def __init__(self, X, Y, power): # Power 5-10 very small,  10-20 small, 20-35 med 35-50 large, boss is 60
 		self.X = X
 		self.Y = Y
 		self.goingTo = [random.randint(0, MAP["AreaSize"][0]), random.randint(0, MAP["AreaSize"][1])]
 		self.speed = (power+75)/7
-		self.state = "wander" #can also be attack and retreat
+		self.state = "wander" # Can also be attack and retreat
 		self.dir = 0
 		self.HP = power*10
 		self.maxHP = power*10
 		self.hovered = False
 		self.cargo = {}
 
-		if power >= 5 and power < 10:
-			self.type = "verySmall"
-		if power >= 10 and power < 20:
-			self.type = "small"
-		if power >= 20 and power < 35:
-			self.type = "med"
-		if power >= 35 and power < 50:
-			self.type="large"
-		if power == 60:
-			self.type = "boss"
+		if power >= 5 and power < 10: self.type = "tiny"
+		if power >= 10 and power < 20: self.type = "small"
+		if power >= 20 and power < 35: self.type = "med"
+		if power >= 35 and power < 50: self.type="large"
+		if power == 60: self.type = "boss"
 
 	def AI(self):
 		if dist((self.X, self.Y), (self.goingTo[0], self.goingTo[1])) < 50 :
@@ -239,6 +233,7 @@ for i in range(10):
 def map():
 	global MAP
 	global gameState
+	screenDisplay.fill((0, 0, 200))
 	pygame.draw.rect(screenDisplay, (0,0,0), (-MAP["ScreenPos"][0], -MAP["ScreenPos"][1], MAP["AreaSize"][0], MAP["AreaSize"][1]), 5)
 	pygame.draw.line(screenDisplay, (0, 0, 0), (0 - MAP["ScreenPos"][0], 0 - MAP["ScreenPos"][1]), (MAP["AreaSize"][0] - MAP["ScreenPos"][0], MAP["AreaSize"][1] - MAP["ScreenPos"][1]))
 	pygame.draw.line(screenDisplay, (0, 0, 0), (MAP["AreaSize"][0] - MAP["ScreenPos"][0], 0 - MAP["ScreenPos"][1]), (0 - MAP["ScreenPos"][0], MAP["AreaSize"][1] - MAP["ScreenPos"][1]))
@@ -341,7 +336,10 @@ def menu():
 		pygame.mouse.set_visible(True)
 		pygame.quit()
 		quit()
-	
+
+def optionsPage():
+	screenDisplay.fill((154, 219, 235))
+	###################################
 
 
 def battleScreen():
@@ -403,18 +401,18 @@ def game_print(message, posX, posY, size, colour):
 	text_rect.center = (posX, posY)
 	gameDisplay.blit(text_surf, text_rect)
 
+def QUIT():
+	pygame.quit()
+	exit()
+
 # Main Loop
 while True:
 	startFrame = time.time()
-	screenDisplay.fill((0, 0, 200))
 	mouseButtons = pygame.mouse.get_pressed()  # (left mouse button, middle, right)
 	mousePos = pygame.mouse.get_pos()  # (x, y)
 
 	for event in pygame.event.get():
-		if event.type == pygame.QUIT:
-			pygame.mouse.set_visible(True)
-			pygame.quit()
-			quit()
+		if event.type == pygame.QUIT: QUIT()
 
 		if event.type == pygame.KEYDOWN:
 			if event.key == pygame.K_w:	Keys["W"] = True
