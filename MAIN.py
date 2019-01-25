@@ -2,6 +2,7 @@ import math
 import time
 import random
 from contextlib import redirect_stdout
+import copy
 
 with redirect_stdout(None):
 	import pygame  # No console message
@@ -21,7 +22,7 @@ class AttrDict(dict):
 
 # Variables
 gameState = "Menu"
-MAP = MENU = F = AttrDict({})
+MAP = MENU = F = PREP = AttrDict({})
 Keys = {"W": False, "A": False, "S": False, "D": False, "E": False}
 F.inventory = ['cannonball', 'birb', 'monkey']
 
@@ -33,6 +34,7 @@ MAP["PlayerPos"] = [MAP["AreaSize"][0] / 2, MAP["AreaSize"][0] / 2]
 MAP["ScreenPos"] = [MAP["AreaSize"][0] / 2, MAP["AreaSize"][0] / 2]
 MAP["PlayerSpeed"] = [0, 0]
 MAP["PlayerDir"] = 0
+MAP["PlayerCargo"] = {"cannonball" : 5, "monkey" : 1, "cannon" : 2, "sailorLV1" : 2 , "sailorLV2" : 1}
 MAP["ShipDrawPos"] = [displayWidth / 2, displayHeight / 2]
 MAP["ActualDrawShip"] = MAP["ShipDrawPos"][:]
 MAP["waveList"] = []
@@ -44,6 +46,7 @@ MAP["LandBlocks"] = {} #List of all peices of land each land is 25x25px
 # 1 is sand, 2 is land, 3 is town and 4 is port
 MAP["WaveSpawnTimer"] = 0
 
+PREP["EnemyCargo"] = {}
 #Random generation
 islands = {}
 islandNum=random.randint(3, 5)
@@ -168,6 +171,7 @@ class PirateShip:
 		self.HP = power*10
 		self.maxHP = power*10
 		self.hovered = False
+		self.cargo = {}
 
 		if power >= 5 and power < 10:
 			self.type = "verySmall"
@@ -277,8 +281,8 @@ def map():
 		if MAP["PirateShips"][i].hovered == True:
 			distance = dist((round(MAP["PlayerPos"][0]), round(MAP["PlayerPos"][1])), (MAP["PirateShips"][i].X, MAP["PirateShips"][i].Y))
 			if distance < 100 and mouseButtons[0] == True:
-				gameState = "Fight"
-				print(gameState)
+				PREP["Enemy"] = copy.copy(MAP["PirateShips"][i])
+				gameState = "Prep"
 
 	#Drawing
 	#Waves
@@ -374,6 +378,11 @@ def miniMap(windDir, windSpeed):
 
 def MapUI(wind, pirateShips):
 	miniMap(wind[0], wind[1])
+	if gameState == "Prep":
+		prepMenu(MAP["PlayerCargo"],PREP["Enemy"].cargo)
+
+def prepMenu(playerCargo, enemyCargo):
+	pygame.draw.rect(screenDisplay, (0,0,0), (displayWidth*0.01, displayHeight*0.3, displayWidth*0.3, displayHeight*0.6), 2)
 
 def dist(point1, point2):
 	X = abs(point1[0]-point2[0])
@@ -408,7 +417,7 @@ while True:
 	if gameState == "Menu":
 		menu()
 
-	if gameState == "Map":
+	if gameState == "Map" or gameState == "Prep":
 		map()
 
 	if gameState == "Fight":
