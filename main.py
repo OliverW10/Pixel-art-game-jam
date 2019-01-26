@@ -33,7 +33,7 @@ MAP["PlayerPos"] = [MAP["AreaSize"][0] / 2, MAP["AreaSize"][0] / 2]
 MAP["ScreenPos"] = [MAP["AreaSize"][0] / 2, MAP["AreaSize"][0] / 2]
 MAP["PlayerSpeed"] = [0, 0]
 MAP["PlayerDir"] = 0
-MAP["PlayerCargo"] = {"cannonball" : 5, "monkey" : 1, "cannon" : 2, "sailorLV1" : 2 , "sailorLV2" : 1}
+MAP["PlayerCargo"] = {"cannonball" : 5, "monkey" : 1, "cannon" : 2, "sailors" : []}
 MAP["ShipDrawPos"] = [displayWidth / 2, displayHeight / 2]
 MAP["ActualDrawShip"] = MAP["ShipDrawPos"][:]
 MAP["waveList"] = []
@@ -63,14 +63,16 @@ for i in range(1000):
 	point = random.choice(points)
 	x = int(point.split(",")[0])
 	y = int(point.split(",")[1])
-	x += random.randint(-1, 1)*25
-	y += random.randint(-1, 1)*25
+	if random.randint(0,1)==0:
+		x += random.randint(-1, 1)*25
+	else:
+		y += random.randint(-1, 1)*25
 	if str(x)+","+str(y) in MAP["LandBlocks"]:
 		pass
 	else:
 		MAP["LandBlocks"][str(x)+","+str(y)] = 2
 
-for i in range(200):
+for i in range(400):
 	points = MAP["LandBlocks"].keys()
 	points = list(points)
 	point = random.choice(points)
@@ -129,8 +131,78 @@ MENU["ButtonPlay"] = loadImage("menuAssets/playButton.png")
 MENU["ButtonOptions"] = loadImage("menuAssets/optionsButton.png")
 MENU["ButtonQuit"] = loadImage("menuAssets/quitButton.png")
 
-PREP["Gun"] = loadImage("items/pistol.png")
-PREP["CannonBall"] = loadImage("items/cannonBall.png")
+PREP["Gun"] = loadImage("fightAssets/items/pistol.png")
+PREP["CannonBall"] = loadImage("fightAssets/items/cannonBall.png")
+PREP["Paper"] = loadImage("mapAssets/paper.png")
+PREP["Paper"] = pygame.transform.scale(MAP["Paper"], (displayWidth, displayHeight))
+
+class sailor:
+	def __init__(self, level, gameState = "prep"):
+		self.level = level
+		self.gold = 0
+		self.stealingPower = level
+		self.ability = abs(random.randint(-3,3)) #-3 to 0 is nothing, 1 is brid (enemies steal 25% less), 2 is monkey (you steal 30% more) and 3 is god and anime (decreases change of death by 15%)
+		if level == 1:
+			if random.randint(0,1) == 0:
+				self.sprite = loadImage("mapAssets\Sailors\Good\lv1(0).png")
+			else:
+				self.sprite = loadImage("mapAssets\Sailors\Good\lv1(1).png")
+		if level == 2:
+			self.sprite = loadImage("mapAssets\Sailors\Good\lv2(0).png")
+
+		if level == 3:
+			self.sprite = loadImage("mapAssets\Sailors\Good\lv3(0).png")
+
+		self.size = self.sprite.get_rect().size
+		self.size = [self.size[0]*2, self.size[1]*2]
+		self.rect = self.sprite.get_rect()
+		self.rect.size = self.size
+		self.gameState = gameState
+		self.X = None
+		self.Y = None
+		self.dragX = None
+		self.dragY = None
+		self.dragged = False
+		self.dragDifX = None
+		self.dragDifY = None
+
+	def setPos(self, X, Y):
+		self.X = X
+		self.Y = Y
+
+	def logic(self, dropSpots):
+		if self.dragged == False:
+			if self.rect.collidepoint(mousePos[0], mousePos[1]) == True and mouseButtons[0] == True:
+				self.dragged = True
+				self.dragDifX = self.X - mousePos[0]
+				self.dragDifY = self.Y - mousePos[1]
+				self.dragX = mousePos[0] + self.dragDifX
+				self.dragY = mosuePos[1] + self.dragDifY
+			else:
+				self.dragX = self.X
+				self.dragY = self.Y
+		if self.dragged == True:
+			if mouseButtons[0] == True:
+				self.dragX = mousePos[0] + self.dragDifX
+				self.dragY = mosuePos[1] + self.dragDifY
+			if mouseButtons[0] == False:
+				self.dragged = False
+				self.dragX = self.X
+				self.dragY = self.Y
+				self.dragDifX = None
+				self.dragDifY = None
+
+	def draw(self, Pos, Size): #pass None for size and pos if you want unchanged size and pos
+		if Size == None:
+			Size = self.size[:]
+		if Pos == None:
+			Pos = [self.dragX, self.dragY]
+		drawSprite = pygame.transform.scale(self.sprite, (Size))
+		screenDisplay.blit(drawSprite, Pos)
+
+MAP["PlayerCargo"]["sailors"] = [sailor(1), sailor(1), sailor(2)]
+for i in range(len(MAP["PlayerCargo"]["sailors"])):
+	MAP["PlayerCargo"]["sailors"][i].setPos((i*50)+150, displayHeight*0.7)
 
 class wave:
 	def __init__(self, X, Y):
@@ -383,8 +455,16 @@ def MapUI(wind, pirateShips):
 		prepMenu(MAP["PlayerCargo"],PREP["Enemy"].cargo)
 
 def prepMenu(playerCargo, enemyCargo):
-	pygame.draw.rect(screenDisplay, (0,0,0), (displayWidth*0.01, displayHeight*0.3, displayWidth*0.3, displayHeight*0.6), 2)
-	screenDisplay.blit(PREP["Gun"], (100,400))
+	screenDisplay.blit(PREP["Paper"], (0,0))
+	game_print("Prepare for battle", displayWidth*0.55, displayHeight*0.2, 25, (20, 20, 0))
+	game_print("Cargo hold", displayWidth*0.3, displayHeight*0.3, 20, (20,20, 0))
+	game_print("On deck", displayWidth*0.7, displayHeight*0.3, 20, (20, 20, 0))
+	game_print("Living quarter", displayWidth*0.3, displayHeight*0.6, 20, (20, 20, 0))
+	pygame.draw.rect(screenDisplay, (10, 200, 30), (displayWidth*0.85, displayHeight*0.9, displayWidth*0.14, displayHeight*0.09))
+	game_print("Fight", displayWidth*0.9, displayHeight*0.95, 10, (0,0,0))
+	for i in range(len(playerCargo["sailors"])):
+		playerCargo["sailors"][i].logic([])
+		playerCargo["sailors"][i].draw(None, None)
 
 def dist(point1, point2):
 	X = abs(point1[0]-point2[0])
@@ -396,10 +476,10 @@ def text_objects(message, font, colour):
 	return textSurface, textSurface.get_rect()
 
 def game_print(message, posX, posY, size, colour):
-	text=pygame.font.SysFont("smalle", round(size*1.5))
+	text=pygame.font.Font("FantasticBoogaloo.ttf", round(size*1.5))
 	text_surf, text_rect = text_objects(message, text, colour)
 	text_rect.center = (posX, posY)
-	gameDisplay.blit(text_surf, text_rect)
+	screenDisplay.blit(text_surf, text_rect)
 
 def QUIT():
 	pygame.quit()
