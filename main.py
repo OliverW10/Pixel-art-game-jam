@@ -46,7 +46,7 @@ MAP["WindDir"] = (
 MAP["WindSpeed"] = 20  # random.randint(1,10)
 MAP["screenRect"] = pygame.Rect(-25, -25, displayWidth + 50, displayHeight + 50)
 MAP["LandBlocks"] = {}  # List of all peices of land each land is 25x25px
-MAP["MiniMapDrawList"] = []
+MAP["MiniMapDrawList"] = {} #actually a dictionary but ctr + h is too hard`
 # Land masses is a 400x300 array or dictionay
 # 1 is sand, 2 is land, 3 is town and 4 is port
 MAP.WaveSpawnTimer = 0
@@ -112,23 +112,88 @@ for i in range(10):
 # Chad random premade islands
 
 islandTypes = [
-	{"125,125": 2,"125,150": 2,"150,150": 2,"150,125": 2,"175,150": 2,
-	"175,175": 2,"150,175": 2,"100,125": 1,"100,150": 1,"125,100": 1,
-	"150,100": 1,"175,125": 1,"175,100": 1,"125,175": 1,"150,200": 1,
-	"175,200": 1,"200,175": 1,"200,150": 1,
+	{
+		"125,125": 2,
+		"125,150": 2,
+		"150,150": 2,
+		"150,125": 2,
+		"175,150": 2,
+		"175,175": 2,
+		"150,175": 2,
+		"100,125": 1,
+		"100,150": 1,
+		"125,100": 1,
+		"150,100": 1,
+		"175,125": 1,
+		"175,100": 1,
+		"125,175": 1,
+		"150,200": 1,
+		"175,200": 1,
+		"200,175": 1,
+		"200,150": 1,
 	},
-	{"250,150": 2,"250,175": 2,"225,175": 2,"225,200": 2,"200,200": 2,
-	"200,225": 2,"200,250": 2,"225,250": 2,"225,225": 2,"250,225": 2,
-	"250,200": 2,"275,200": 2,"275,225": 2,"250,250": 2,"250,275": 3,
-	"250,300": 3,"275,300": 2,"275,275": 2,"300,275": 2,"300,250": 2,
-	"300,225": 2,"275,175": 2,"275,250": 2,"300,175": 2,"300,200": 2,
-	"325,200": 2,"325,225": 2,"350,225": 2,"350,250": 2,"350,275": 2,
-	"325,275": 2,"325,300": 2,"300,300": 2,"300,325": 2,"325,250": 2,
-	"275,325": 2,"275,350": 2,"250,350": 2,"250,325": 2,"225,325": 2,
-	"225,300": 3,"200,275": 2,"225,275": 2,"200,325": 2,"175,325": 2,
-	"150,325": 2,"150,300": 2,"125,325": 2,"125,300": 2,"125,275": 2,
-	"125,250": 2,"150,250": 2,"175,250": 2,"200,300": 2,"175,300": 2,
-	"175,275": 2,"150,275": 2,"150,225": 1,"175,225": 2,"175,350": 2,"200,350": 2,
+	{
+		"250,150": 2,
+		"250,175": 2,
+		"225,175": 2,
+		"225,200": 2,
+		"200,200": 2,
+		"200,225": 2,
+		"200,250": 2,
+		"225,250": 2,
+		"225,225": 2,
+		"250,225": 2,
+		"250,200": 2,
+		"275,200": 2,
+		"275,225": 2,
+		"250,250": 2,
+		"250,275": 3,
+		"250,300": 3,
+		"275,300": 2,
+		"275,275": 2,
+		"300,275": 2,
+		"300,250": 2,
+		"300,225": 2,
+		"275,175": 2,
+		"275,250": 2,
+		"300,175": 2,
+		"300,200": 2,
+		"325,200": 2,
+		"325,225": 2,
+		"350,225": 2,
+		"350,250": 2,
+		"350,275": 2,
+		"325,275": 2,
+		"325,300": 2,
+		"300,300": 2,
+		"300,325": 2,
+		"325,250": 2,
+		"275,325": 2,
+		"275,350": 2,
+		"250,350": 2,
+		"250,325": 2,
+		"225,325": 2,
+		"225,300": 3,
+		"200,275": 2,
+		"225,275": 2,
+		"200,325": 2,
+		"175,325": 2,
+		"150,325": 2,
+		"150,300": 2,
+		"125,325": 2,
+		"125,300": 2,
+		"125,275": 2,
+		"125,250": 2,
+		"150,250": 2,
+		"175,250": 2,
+		"200,300": 2,
+		"175,300": 2,
+		"175,275": 2,
+		"150,275": 2,
+		"150,225": 1,
+		"175,225": 2,
+		"175,350": 2,
+		"200,350": 2,
 		"225,350": 2,
 		"250,375": 2,
 		"275,375": 2,
@@ -816,7 +881,17 @@ islandTypes = [
 		"275,300": 2,
 		"300,275": 2,
 		"350,375": 4,
-	},]
+	},
+]
+
+for i in range(random.randint(3, 10)):
+	currentType = islandTypes[random.randint(0, len(islandTypes)-1)]
+	islandX, islandY = random.randint(0, MAP["AreaSize"][0]/25)*25, random.randint(0, MAP["AreaSize"][1]/25)*25
+	for block in currentType:
+		x = int(block.split(",")[0])
+		y = int(block.split(",")[1])
+		newBlock = str(x + islandX)+","+str(y + islandY)
+		MAP["LandBlocks"][newBlock] = currentType[block]
 
 # Loading Sprites/images
 MAP.ships = [
@@ -1091,6 +1166,7 @@ for i in range(10):
 def map():
 	global MAP
 	global gameState
+	MAP["MiniMapDrawList"] = {}
 	screenDisplay.fill((0, 0, 200))
 	pygame.draw.rect(
 		screenDisplay,
@@ -1175,7 +1251,13 @@ def map():
 	if MAP["WaveSpawnTimer"] > 0.1:
 		MAP["WaveSpawnTimer"] = 0
 		MAP["waveList"].append(
-			wave(MAP["PlayerPos"][0]+ random.randint(-displayWidth / 2 - 50, displayWidth / 2 + 50),MAP["PlayerPos"][1]+ random.randint(-displayHeight / 2 - 50, displayHeight / 2 + 50)))
+			wave(
+				MAP["PlayerPos"][0]
+				+ random.randint(-displayWidth / 2 - 50, displayWidth / 2 + 50),
+				MAP["PlayerPos"][1]
+				+ random.randint(-displayHeight / 2 - 50, displayHeight / 2 + 50),
+			)
+		)
 	for i in range(len(MAP["waveList"])):
 		MAP["waveList"][i].draw()
 	waveDeleter()
@@ -1190,10 +1272,17 @@ def map():
 			colour = (210, 105, 30)
 		elif MAP["LandBlocks"][pos] == 4:
 			colour = (5, 5, 5)
-		x = int(pos.split(",")[0]) - MAP["ScreenPos"][0]
-		y = int(pos.split(",")[1]) - MAP["ScreenPos"][1]
-		if x > -25 and x < displayWidth and y > -25 and y < displayHeight:
-			pygame.draw.rect(screenDisplay, (colour), (x, y, 25, 25))
+
+		x = int(pos.split(",")[0])
+		y = int(pos.split(",")[1])
+		drawX = x - MAP["ScreenPos"][0]
+		drawY = y - MAP["ScreenPos"][1]
+
+		if dist((x, y), MAP["PlayerPos"]) < 1100: #adding to minimap
+			MAP["MiniMapDrawList"][str(x - MAP["PlayerPos"][0])+","+str(y - MAP["PlayerPos"][1])] = colour
+
+		if drawX > -25 and drawX < displayWidth and drawY > -25 and drawY < displayHeight:
+			pygame.draw.rect(screenDisplay, (colour), (drawX, drawY, 25, 25))
 			# Pirates
 	for i in range(len(MAP["PirateShips"])):
 		MAP["PirateShips"][i].AI()
@@ -1201,7 +1290,13 @@ def map():
 		MAP["PirateShips"][i].draw()
 		# Player
 	drawShip = MAP["ships"][MAP["PlayerDir"]]
-	screenDisplay.blit(drawShip, (MAP["PlayerPos"][0] - MAP["ScreenPos"][0],MAP["PlayerPos"][1] - MAP["ScreenPos"][1],))
+	screenDisplay.blit(
+		drawShip,
+		(
+			MAP["PlayerPos"][0] - MAP["ScreenPos"][0],
+			MAP["PlayerPos"][1] - MAP["ScreenPos"][1],
+		),
+	)
 	# Ui
 	MapUI([MAP["WindDir"], MAP["WindSpeed"]], MAP["PirateShips"])
 
@@ -1224,9 +1319,11 @@ def menu():
 		pygame.quit()
 		quit()
 
+
 def optionsPage():
 	screenDisplay.fill((154, 219, 235))
 	###################################
+
 
 def battleScreen():
 	# Display Assets
@@ -1236,12 +1333,18 @@ def battleScreen():
 	slots_drawn = 0
 	for item in F["inventory"]:
 		slots_drawn += 1
-		screenDisplay.blit(loadImage(f"fightAssets/INV_{item}.png"),(30 * slots_drawn + 50 * slots_drawn, 515))
+		screenDisplay.blit(
+			loadImage(f"fightAssets/INV_{item}.png"),
+			(30 * slots_drawn + 50 * slots_drawn, 515),
+		)
 
 	"""Behaviorial script"""
 
+
 def cutScene():  # Need to make
 	pass
+
+
 ### Other funtions ###
 def waveDeleter():
 	global MAP
@@ -1250,16 +1353,27 @@ def waveDeleter():
 			del MAP["waveList"][i]
 			waveDeleter()
 			break
-def miniMap(windDir, windSpeed):
+
+
+def miniMap(windDir, windSpeed, zoom):
 	center = (round(displayWidth * 0.1), round(displayHeight * 0.9))
-	pygame.draw.circle(screenDisplay, (0, 0, 0), (center[0], center[1]), round(displayWidth * 0.07), 2)
+	pygame.draw.circle(screenDisplay, (30, 50, 230), (center[0], center[1]), round(displayWidth * 0.07), 0)
+	for pos in MAP["MiniMapDrawList"]:
+		drawX = (float(pos.split(",")[0]) / zoom) + center[0]
+		drawY = (float(pos.split(",")[1]) / zoom) + center[1]
+		pygame.draw.rect(screenDisplay, MAP["MiniMapDrawList"][pos], (drawX, drawY, round(25/zoom)+1, round(25/zoom)+1))
+
+	pygame.draw.circle(screenDisplay, (0, 0, 0), (center[0], center[1]), round(displayWidth * 0.07), 5)
 	lineP1 = (math.sin(windDir) * windSpeed * 2, math.cos(windDir) * windSpeed * 2)
 	pygame.draw.line(screenDisplay, (100, 100, 120), (lineP1[0] + center[0], lineP1[1] + center[1]), (center[0], center[1]), 3)
 
+
 def MapUI(wind, pirateShips):
-	miniMap(wind[0], wind[1])
+	miniMap(wind[0], wind[1], 20)
 	if gameState == "Prep":
 		prepMenu(MAP["PlayerCargo"], PREP["Enemy"].cargo)
+
+
 def prepMenu(playerCargo, enemyCargo):
 	global gameState
 	screenDisplay.blit(PREP["Paper"], (0, 0))
@@ -1271,30 +1385,50 @@ def prepMenu(playerCargo, enemyCargo):
 	game_print(
 		"Living quarter", displayWidth * 0.3, displayHeight * 0.6, 20, (20, 20, 0)
 	)
-	pygame.draw.rect(screenDisplay, (10, 200, 30), (displayWidth * 0.85, displayHeight * 0.9, displayWidth * 0.14, displayHeight * 0.09,))
+	pygame.draw.rect(
+		screenDisplay,
+		(10, 200, 30),
+		(
+			displayWidth * 0.85,
+			displayHeight * 0.9,
+			displayWidth * 0.14,
+			displayHeight * 0.09,
+		),
+	)
 	game_print("Fight", displayWidth * 0.9, displayHeight * 0.95, 10, (0, 0, 0))
-	if (PREP["FightButtonRect"].collidepoint(mousePos[0], mousePos[1]) and mouseButtons[0] == True):
+	if (
+		PREP["FightButtonRect"].collidepoint(mousePos[0], mousePos[1])
+		and mouseButtons[0] == True
+	):
 		gameState = "Fight"
 	for i in range(len(playerCargo["sailors"])):
 		playerCargo["sailors"][i].logic([])
 		playerCargo["sailors"][i].draw(None, None)
+
+
 def dist(point1, point2):
 	X = abs(point1[0] - point2[0])
 	Y = abs(point1[1] - point2[1])
 	return math.sqrt(X ** 2 + Y ** 2)
+
+
 def text_objects(message, font, colour):
 	textSurface = font.render(message, True, colour)
 	return textSurface, textSurface.get_rect()
-	
+
+
 def game_print(message, posX, posY, size, colour):
 	text = pygame.font.Font("FantasticBoogaloo.ttf", round(size * 1.5))
 	text_surf, text_rect = text_objects(message, text, colour)
 	text_rect.center = (posX, posY)
 	screenDisplay.blit(text_surf, text_rect)
 
+
 def QUIT():
 	pygame.quit()
 	exit()
+
+
 # Main Loop
 while True:
 	startFrame = time.time()
