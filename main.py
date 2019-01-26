@@ -26,7 +26,6 @@ Keys = {"W": False, "A": False, "S": False, "D": False, "E": False}
 F.inventory = ['cannonball', 'birb', 'monkey']
 
 # MAP variables
-
 MAP["PirateShips"] = []
 MAP["AreaSize"] = [displayWidth * 3, displayHeight * 3]
 MAP["PlayerPos"] = [MAP["AreaSize"][0] / 2, MAP["AreaSize"][0] / 2]
@@ -41,6 +40,7 @@ MAP["WindDir"] = math.pi*1.5#random.randint(0, round(math.pi*2)) #in degrees bea
 MAP["WindSpeed"] = 20 #random.randint(1,10)
 MAP["screenRect"] = pygame.Rect(-25, -25, displayWidth+50, displayHeight+50)
 MAP["LandBlocks"] = {} #List of all peices of land each land is 25x25px
+MAP["MiniMapDrawList"] = []
 #Land masses is a 400x300 array or dictionay
 # 1 is sand, 2 is land, 3 is town and 4 is port
 MAP.WaveSpawnTimer = 0
@@ -48,7 +48,7 @@ MAP.WaveSpawnTimer = 0
 PREP.EnemyCargo = {}
 #Random generation
 islands = {}
-islandNum=random.randint(3, 5)
+islandNum=random.randint(5, 25)
 
 for i in range(islandNum):
 	town = str(random.randint(0, round(MAP["AreaSize"][0]/25))*25)+","+str(random.randint(0, round(MAP["AreaSize"][0]/25))*25)
@@ -72,7 +72,22 @@ for i in range(1000):
 	else:
 		MAP["LandBlocks"][str(x)+","+str(y)] = 2
 
-for i in range(400):
+for i in range(500):
+	points = MAP["LandBlocks"].keys()
+	points = list(points)
+	point = random.choice(points)
+	x = int(point.split(",")[0])
+	y = int(point.split(",")[1])
+	if random.randint(0,1)==0:
+		x += random.randint(-1, 1)*25
+	else:
+		y += random.randint(-1, 1)*25
+	if str(x)+","+str(y) in MAP["LandBlocks"]:
+		pass
+	else:
+		MAP["LandBlocks"][str(x)+","+str(y)] = 1
+
+for i in range(10):
 	points = MAP["LandBlocks"].keys()
 	points = list(points)
 	point = random.choice(points)
@@ -83,7 +98,7 @@ for i in range(400):
 	if str(x)+","+str(y) in MAP["LandBlocks"]:
 		pass
 	else:
-		MAP["LandBlocks"][str(x)+","+str(y)] = 1
+		MAP["LandBlocks"][str(x)+","+str(y)] = 4
 
 
 # Loading Sprites/images
@@ -135,6 +150,7 @@ PREP["Gun"] = loadImage("fightAssets/items/pistol.png")
 PREP["CannonBall"] = loadImage("fightAssets/items/cannonBall.png")
 PREP["Paper"] = loadImage("mapAssets/paper.png")
 PREP["Paper"] = pygame.transform.scale(MAP["Paper"], (displayWidth, displayHeight))
+PREP["FightButtonRect"] = pygame.Rect(displayWidth*0.85, displayHeight*0.9, displayWidth*0.14, displayHeight*0.09)
 
 class sailor:
 	def __init__(self, level, gameState = "prep"):
@@ -368,13 +384,15 @@ def map():
 
 	#Land
 	for pos in MAP["LandBlocks"]:
-		if MAP["LandBlocks"][pos] == 1:
+		if MAP["LandBlocks"][pos] == 1: #sand
 			colour = (255, 200, 10)
-		if MAP["LandBlocks"][pos] == 2:
+		elif MAP["LandBlocks"][pos] == 2: #grass
 			colour = (0, 255, 0)
-		if MAP["LandBlocks"][pos] == 3:
+		elif MAP["LandBlocks"][pos] == 3: #town
 			colour = (210,105,30)
-		x = int(pos.split(",")[0])  - MAP["ScreenPos"][0]
+		elif MAP["LandBlocks"][pos] == 4:
+			colour = (5,5,5)
+		x = int(pos.split(",")[0]) - MAP["ScreenPos"][0]
 		y = int(pos.split(",")[1])  - MAP["ScreenPos"][1]
 		if x > -25 and x < displayWidth and y > -25 and y < displayHeight:
 			pygame.draw.rect(screenDisplay, (colour), (x, y, 25, 25))
@@ -455,6 +473,7 @@ def MapUI(wind, pirateShips):
 		prepMenu(MAP["PlayerCargo"],PREP["Enemy"].cargo)
 
 def prepMenu(playerCargo, enemyCargo):
+	global gameState
 	screenDisplay.blit(PREP["Paper"], (0,0))
 	game_print("Prepare for battle", displayWidth*0.55, displayHeight*0.2, 25, (20, 20, 0))
 	game_print("Cargo hold", displayWidth*0.3, displayHeight*0.3, 20, (20,20, 0))
@@ -462,6 +481,8 @@ def prepMenu(playerCargo, enemyCargo):
 	game_print("Living quarter", displayWidth*0.3, displayHeight*0.6, 20, (20, 20, 0))
 	pygame.draw.rect(screenDisplay, (10, 200, 30), (displayWidth*0.85, displayHeight*0.9, displayWidth*0.14, displayHeight*0.09))
 	game_print("Fight", displayWidth*0.9, displayHeight*0.95, 10, (0,0,0))
+	if PREP["FightButtonRect"].collidepoint(mousePos[0], mousePos[1]) and mouseButtons[0] == True:
+		gameState = "Fight"
 	for i in range(len(playerCargo["sailors"])):
 		playerCargo["sailors"][i].logic([])
 		playerCargo["sailors"][i].draw(None, None)

@@ -1,0 +1,1 @@
+{'cannonball': 5, 'monkey': 1, 'cannon': 2, 'sailors': [<__main__.sailor object at 0x073AB2B0>, <__main__.sailor object at 0x073AB750>, <__main__.sailor object at 0x073AB4D0>]}
