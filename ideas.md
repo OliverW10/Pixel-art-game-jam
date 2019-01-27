@@ -13,7 +13,6 @@
 - Add sprites for land
 - Collisions between ships & land
 - Ports
-- Improve generation (island size)
 - FLAT EARTH (Waterfall off the edge)
 - Need to have gold to upgrade ship when sinking
 - Move slower in water when damaged

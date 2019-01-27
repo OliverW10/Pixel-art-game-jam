@@ -126,6 +126,18 @@ for i in range(random.randint(6, 10)):
         newBlock = str(x + islandX) + "," + str(y + islandY)
         MAP["LandBlocks"][newBlock] = currentType[block]
 
+MAP["CollisionsList"] = []
+for pos in MAP["LandBlocks"]:
+	x = int(pos.split(",")[0])
+	y = int(pos.split(",")[1])
+	if str(x+25)+","+str(y) in MAP["LandBlocks"] and str(x-25)+","+str(y) in MAP["LandBlocks"] and str(x)+","+str(y+25) in MAP["LandBlocks"] and str(x)+","+str(y-25) in MAP["LandBlocks"]:
+		pass
+	else:
+		MAP["CollisionsList"].append(pygame.Rect(x, y, 25, 25))
+
+print(len(MAP["CollisionsList"]))
+print(len(MAP["LandBlocks"]))
+
 # Loading Sprites/images
 MAP.ships = [
     loadImage("mapAssets/Player/shipL.png"),
@@ -518,7 +530,8 @@ def map():
             and drawY < displayHeight
         ):
             pygame.draw.rect(screenDisplay, (colour), (drawX, drawY, 25, 25))
-            # Pirates
+
+    # Pirates
     for i in range(len(MAP["PirateShips"])):
         MAP["PirateShips"][i].AI()
         MAP["PirateShips"][i].X
