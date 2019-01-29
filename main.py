@@ -28,25 +28,27 @@ global gameState
 gameState = "Cutscene"
 global MAP, MENU, F, PREP, SETTINGS
 frameTime = 0
-MAP = MENU = F = PREP = SETTINGS = SAVE = AttrDict({})
+MAP = MENU = F = PREP = SETTINGS = AttrDict({})
 Keys = {"W": False, "A": False, "S": False, "D": False, "E": False}
-F.inventory = ["cannonball", "birb", "monkey"]
+F.inventory = {"sailors" : [], "cannonballs" : 0, "nets" : 0}
 
 # MAP variables
+MAP["WaterReflections"] = []
+MAP["WaterReflectionsCount"] = 0
+MAP["WaterReflectionsPos"] = [0, 0]
+MAP["lastReflectSprite"] = 0
 MAP["PirateShips"] = []
 MAP["AreaSize"] = [displayWidth * 3, displayHeight * 3]
 MAP["PlayerPos"] = [MAP["AreaSize"][0] / 2, MAP["AreaSize"][0] / 2]
 MAP["ScreenPos"] = [MAP["AreaSize"][0] / 2, MAP["AreaSize"][0] / 2]
 MAP["PlayerSpeed"] = [0, 0]
 MAP["PlayerDir"] = 0
-MAP["PlayerCargo"] = {"cannonball": 5, "cannon": 2, "sailors": []} #Inventory
+MAP["PlayerCargo"] = {"cannonball": 5, "nets" : 2, "cannon": 2, "sailors": []} #Inventory
 MAP["PlayerStats"] = {"speed" : 5, "armor" : 1, "HP" : 10}
 MAP["ShipDrawPos"] = [displayWidth / 2, displayHeight / 2]
 MAP["ActualDrawShip"] = MAP["ShipDrawPos"][:]
 MAP["waveList"] = []
-MAP["WindDir"] = (
-	math.pi * 1.5
-)  # random.randint(0, round(math.pi*2)) #in degrees beacuse its easier for me
+MAP["WindDir"] = (math.pi * 1.5)  # random.randint(0, round(math.pi*2)) #in degrees beacuse its easier for me
 MAP["WindSpeed"] = 20  # random.randint(1,10)
 MAP["screenRect"] = pygame.Rect(-25, -25, displayWidth + 50, displayHeight + 50)
 MAP["LandBlocks"] = {}  # List of all peices of land each land is 25x25px
@@ -54,8 +56,27 @@ MAP["MiniMapDrawList"] = {}  # actually a dictionary but ctr + h is too hard`
 # Land masses is a 400x300 array or dictionay
 # 1 is sand, 2 is land, 3 is town and 4 is port
 MAP.WaveSpawnTimer = 0
-
 PREP.EnemyCargo = {}
+
+#WaterReflections
+for p in range(10):
+	MAP["WaterReflections"].append(pygame.Surface((displayWidth, displayHeight)))
+	MAP["WaterReflections"][-1].fill((0,0,200))
+	for i in range(2000):
+		x = (random.random() + random.random())/2
+		x -= 0.5
+
+		y = random.random()
+		#    y * how much angle + how wide (inverse)
+		x /= y*5+3
+
+		x *= displayWidth
+		x += displayWidth/2
+		y = -y
+		y += 1
+		y *= displayHeight
+		pygame.draw.rect(MAP["WaterReflections"][-1], (200,200,255), (x, y, 5, 5))
+
 # Random generation
 islands = {}
 
@@ -93,8 +114,6 @@ for pos in MAP["LandBlocks"]:
 	x = round(x)
 	y = round(y)
 	islandArray[x][y] = MAP["LandBlocks"][pos]
-
-print(len(islandArray))
 
 
 # Loading Sprites/images
@@ -380,12 +399,24 @@ for i in range(10):
 		)
 	)
 
+
 # GAME STATES (Functions)
 def map():
 	global MAP
 	global gameState
 	MAP["MiniMapDrawList"] = {}
-	screenDisplay.fill((0, 0, 200))
+	#screenDisplay.fill((0, 0, 200))
+	MAP["WaterReflectionsPos"][0] -= MAP["PlayerSpeed"][0] + MAP["WindSpeed"] * frameTime
+	MAP["WaterReflectionsPos"][1] -= MAP["PlayerSpeed"][1] 
+
+	screenDisplay.blit(MAP["WaterReflections"][round(MAP["WaterReflectionsCount"]*4)], (MAP["WaterReflectionsPos"][0], MAP["WaterReflectionsPos"][1]))
+	MAP["WaterReflectionsCount"]+=(abs(MAP["PlayerSpeed"][0]) + abs(MAP["PlayerSpeed"][1]) + MAP["WindSpeed"] * frameTime)/20
+	if MAP["WaterReflectionsCount"] > (len(MAP["WaterReflections"])*0.25)-0.75:
+		MAP["WaterReflectionsCount"] = -0.5
+	if MAP["lastReflectSprite"] != round(MAP["WaterReflectionsCount"]*4):
+		MAP["WaterReflectionsPos"] = [0,0]
+	MAP["lastReflectSprite"] = round(MAP["WaterReflectionsCount"]*4)
+
 	pygame.draw.rect(
 		screenDisplay,
 		(0, 0, 0),
@@ -680,10 +711,11 @@ def prepMenu(playerCargo, enemyCargo):
 		),
 	)
 	game_print("Fight", displayWidth * 0.9, displayHeight * 0.95, 10, (0, 0, 0))
-	if (
-		PREP["FightButtonRect"].collidepoint(mousePos[0], mousePos[1])
-		and mouseButtons[0] == True
-	):
+	if (PREP["FightButtonRect"].collidepoint(mousePos[0], mousePos[1])
+		and mouseButtons[0] == True):
+		for i in range(len(playerCargo["sailors"])):
+			if playerCargo["sailors"][i].location == 0:
+				F.inventory["sailors"].append(playerCargo["sailors"][i])
 		gameState = "Fight"
 
 	dropRects = [pygame.Rect(displayWidth * 0.6, displayWidth * 0.3, displayWidth*0.2, displayHeight * 0.1), pygame.Rect(displayWidth * 0.1, displayHeight * 0.7, displayWidth *0.3, displayHeight * 0.1)]
