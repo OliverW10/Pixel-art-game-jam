@@ -28,7 +28,7 @@ global gameState
 gameState = "Cutscene"
 global MAP, MENU, F, PREP, SETTINGS
 frameTime = 0
-MAP = MENU = F = PREP = SETTINGS = AttrDict({})
+MAP = MENU = F = PREP = SETTINGS = SAVE = AttrDict({})
 Keys = {"W": False, "A": False, "S": False, "D": False, "E": False}
 F.inventory = ["cannonball", "birb", "monkey"]
 
@@ -39,7 +39,8 @@ MAP["PlayerPos"] = [MAP["AreaSize"][0] / 2, MAP["AreaSize"][0] / 2]
 MAP["ScreenPos"] = [MAP["AreaSize"][0] / 2, MAP["AreaSize"][0] / 2]
 MAP["PlayerSpeed"] = [0, 0]
 MAP["PlayerDir"] = 0
-MAP["PlayerCargo"] = {"cannonball": 5, "monkey": 1, "cannon": 2, "sailors": []}
+MAP["PlayerCargo"] = {"cannonball": 5, "cannon": 2, "sailors": []} #Inventory
+MAP["PlayerStats"] = {"speed" : 5, "armor" : 1, "HP" : 10}
 MAP["ShipDrawPos"] = [displayWidth / 2, displayHeight / 2]
 MAP["ActualDrawShip"] = MAP["ShipDrawPos"][:]
 MAP["waveList"] = []
@@ -191,12 +192,15 @@ class sailor:
 		self.dragged = False
 		self.dragDifX = None
 		self.dragDifY = None
+		self.location = "start"
 
 	def setPos(self, X, Y):
 		self.X = X
 		self.Y = Y
+		self.rect.x = X
+		self.rect.y = Y
 
-	def logic(self, dropSpots):
+	def logic(self, dropSpots): #drop spots is a list of rects that you can drop at
 		if self.dragged == False:
 			if (
 				self.rect.collidepoint(mousePos[0], mousePos[1]) == True
@@ -206,14 +210,22 @@ class sailor:
 				self.dragDifX = self.X - mousePos[0]
 				self.dragDifY = self.Y - mousePos[1]
 				self.dragX = mousePos[0] + self.dragDifX
-				self.dragY = mosuePos[1] + self.dragDifY
+				self.dragY = mousePos[1] + self.dragDifY
 			else:
 				self.dragX = self.X
 				self.dragY = self.Y
 		if self.dragged == True:
+			for i in range(len(dropSpots)):
+				if dropSpots[i].collidepoint((self.dragX, self.dragY)) == True:
+					self.X = self.dragX
+					self.Y = self.dragY
+					self.rect.x = self.X
+					self.rect.y = self.Y
+					self.location = i
 			if mouseButtons[0] == True:
 				self.dragX = mousePos[0] + self.dragDifX
-				self.dragY = mosuePos[1] + self.dragDifY
+				self.dragY = mousePos[1] + self.dragDifY
+
 			if mouseButtons[0] == False:
 				self.dragged = False
 				self.dragX = self.X
@@ -232,7 +244,7 @@ class sailor:
 		screenDisplay.blit(drawSprite, Pos)
 
 
-MAP["PlayerCargo"]["sailors"] = [sailor(1), sailor(1), sailor(2)]
+MAP["PlayerCargo"]["sailors"] = [sailor(3), sailor(2), sailor(2)]
 for i in range(len(MAP["PlayerCargo"]["sailors"])):
 	MAP["PlayerCargo"]["sailors"][i].setPos((i * 50) + 150, displayHeight * 0.7)
 
@@ -481,9 +493,9 @@ def map():
 	# Land
 	for pos in MAP["LandBlocks"]:
 		if MAP["LandBlocks"][pos] == 1:  # sand
-			colour = (255, 200, 10)
+			colour = (220, 220, 10)
 		elif MAP["LandBlocks"][pos] == 2:  # grass
-			colour = (0, 255, 0)
+			colour = (0, 150, 0)
 		elif MAP["LandBlocks"][pos] == 3:  # town
 			colour = (210, 105, 30)
 		elif MAP["LandBlocks"][pos] == 4:
@@ -575,10 +587,12 @@ def battleScreen():
 
 def cutScene():  # Need to make
 	global gameState
-	gameState = "Map"
+	gameState = "Menu"
 
 def shop():
 	screenDisplay.blit(MAP["BuyBoard"], (0,0))
+	game_print("Speed: "+str(MAP["PlayerStats"]["speed"]), displayWidth * 0.2, displayHeight*0.3, 20, (10,10,10))
+	game_print("Armor: "+str(MAP["PlayerStats"]["armor"]), displayWidth * 0.2, displayHeight*0.35, 20, (10,10,10))
 
 ### Other funtions ###
 def waveDeleter():
@@ -650,14 +664,11 @@ def MapUI(wind, pirateShips):
 def prepMenu(playerCargo, enemyCargo):
 	global gameState
 	screenDisplay.blit(PREP["Paper"], (0, 0))
-	game_print(
-		"Prepare for battle", displayWidth * 0.55, displayHeight * 0.2, 25, (20, 20, 0)
-	)
+	#GAme prints cause serious performace issues
+	game_print("Prepare for battle", displayWidth * 0.55, displayHeight * 0.2, 25, (20, 20, 0))
 	game_print("Cargo hold", displayWidth * 0.3, displayHeight * 0.3, 20, (20, 20, 0))
 	game_print("On deck", displayWidth * 0.7, displayHeight * 0.3, 20, (20, 20, 0))
-	game_print(
-		"Living quarter", displayWidth * 0.3, displayHeight * 0.6, 20, (20, 20, 0)
-	)
+	game_print("Living quarters", displayWidth * 0.3, displayHeight * 0.6, 20, (20, 20, 0))
 	pygame.draw.rect(
 		screenDisplay,
 		(10, 200, 30),
@@ -674,8 +685,10 @@ def prepMenu(playerCargo, enemyCargo):
 		and mouseButtons[0] == True
 	):
 		gameState = "Fight"
+
+	dropRects = [pygame.Rect(displayWidth * 0.6, displayWidth * 0.3, displayWidth*0.2, displayHeight * 0.1), pygame.Rect(displayWidth * 0.1, displayHeight * 0.7, displayWidth *0.3, displayHeight * 0.1)]
 	for i in range(len(playerCargo["sailors"])):
-		playerCargo["sailors"][i].logic([])
+		playerCargo["sailors"][i].logic(dropRects) #give a list of rects that you can drop at
 		playerCargo["sailors"][i].draw(None, None)
 
 
@@ -703,8 +716,8 @@ def testCollision(point):
 def game_print(message, posX, posY, size, colour):
 	text = pygame.font.Font("FantasticBoogaloo.ttf", round(size * 1.5))
 	text_surf, text_rect = text_objects(message, text, colour)
-	text_rect.center = (posX, posY)
-	screenDisplay.blit(text_surf, text_rect)
+	text_rect.center = (posX, posY) 
+	screenDisplay.blit(text_surf, text_rect)  #GAme prints cause serious performace issues
 
 def QUIT():
 	pygame.quit()
