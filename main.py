@@ -33,7 +33,7 @@ Keys = {"W": False, "A": False, "S": False, "D": False, "E": False}
 F.inventory = {"sailors": [], "cannonballs": 0, "nets": 0}
 
 # MAP variables
-MAP["SparkleType"] = 0  # 0 is shit, 1 is fps low and 2 is off
+MAP["SparkleType"] = 1  # 0 is shit, 1 is fps low and 2 is off
 if MAP["SparkleType"] == 0:
 	MAP["WaterReflections"] = []
 	MAP["WaterReflectionsCount"] = 0
@@ -50,6 +50,7 @@ MAP["PlayerCargo"] = {
 	"nets": 2,
 	"cannon": 2,
 	"sailors": [],
+	"Gold" : 100
 }  # Inventory
 MAP["PlayerStats"] = {"speed": 5, "armor": 1, "HP": 10}
 MAP["ShipDrawPos"] = [displayWidth / 2, displayHeight / 2]
@@ -192,7 +193,7 @@ PREP["Paper"] = pygame.transform.scale(MAP["Paper"], (displayWidth, displayHeigh
 PREP["FightButtonRect"] = pygame.Rect(
 	displayWidth * 0.85, displayHeight * 0.9, displayWidth * 0.14, displayHeight * 0.09
 )
-
+PREP["Text"] = {}
 
 class sparkle:
 	def __init__(self, X, Y):
@@ -429,13 +430,16 @@ for i in range(10):
 		)
 	)
 
+MAP["Text"]["Gold"] = text("Gold: "+str(MAP["Stat"]))
 
 # GAME STATES (Functions)
 def map():
+	startFunc = time.time()
 	global MAP
 	global gameState
 	MAP["MiniMapDrawList"] = {}
 	screenDisplay.fill((0, 0, 200))
+
 	if MAP["SparkleType"] == 0:
 		MAP["WaterReflectionsPos"][0] -= (
 			MAP["PlayerSpeed"][0] + MAP["WindSpeed"] * frameTime
@@ -755,18 +759,36 @@ def MapUI(wind, pirateShips):
 		shop()
 
 
+def text_objects(message, font, colour):
+	textSurface = font.render(message, True, colour)
+	return textSurface, textSurface.get_rect()
+
+class text:
+	def __init__(self, message, X, Y, size, colour):
+		self.font = pygame.font.Font("FantasticBoogaloo.ttf", round(size*1.5))
+		self.surf, self.rect = text_objects(message, self.font, colour)
+		self.rect.center = (X, Y)
+
+	def draw(self):
+		screenDisplay.blit(self.surf, self.rect)
+
+	def set(self, message, X, Y, size, colour):
+		self.surf, self.rect = text_objects(message, self.font, colour)
+		self.rect.center = (X, Y)
+
+
+PREP["Text"]["Prepare"] = text("Prepare for battle", displayWidth * 0.55, displayHeight * 0.2, 25, (20, 20, 0))
+PREP["Text"]["Cargo"] = text("Cargo hold", displayWidth * 0.3, displayHeight * 0.3, 20, (20, 20, 0))
+PREP["Text"]["Deck"] = text("On deck", displayWidth * 0.7, displayHeight * 0.3, 20, (20, 20, 0))
+PREP["Text"]["Living"] = text("Living quarters", displayWidth * 0.3, displayHeight * 0.6, 20, (20, 20, 0))
 def prepMenu(playerCargo, enemyCargo):
 	global gameState
 	screenDisplay.blit(PREP["Paper"], (0, 0))
 	# GAme prints cause serious performace issues
-	game_print(
-		"Prepare for battle", displayWidth * 0.55, displayHeight * 0.2, 25, (20, 20, 0)
-	)
-	game_print("Cargo hold", displayWidth * 0.3, displayHeight * 0.3, 20, (20, 20, 0))
-	game_print("On deck", displayWidth * 0.7, displayHeight * 0.3, 20, (20, 20, 0))
-	game_print(
-		"Living quarters", displayWidth * 0.3, displayHeight * 0.6, 20, (20, 20, 0)
-	)
+	PREP["Text"]["Prepare"].draw()
+	PREP["Text"]["Cargo"].draw()
+	PREP["Text"]["Deck"].draw()
+	PREP["Text"]["Living"].draw()
 	pygame.draw.rect(
 		screenDisplay,
 		(10, 200, 30),
@@ -812,12 +834,6 @@ def dist(point1, point2):
 	X = abs(point1[0] - point2[0])
 	Y = abs(point1[1] - point2[1])
 	return math.sqrt(X ** 2 + Y ** 2)
-
-
-def text_objects(message, font, colour):
-	textSurface = font.render(message, True, colour)
-	return textSurface, textSurface.get_rect()
-
 
 def testCollision(point):
 	collide = islandArray[int(point[0] / 25)][int(point[1] / 25)]
