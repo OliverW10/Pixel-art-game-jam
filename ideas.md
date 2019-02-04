@@ -11,14 +11,11 @@
 
 ``` MAP ```
 - Add sprites for land
-- Collisions between ships & land
-- Ports
 - FLAT EARTH (Waterfall off the edge)
 - Need to have gold to upgrade ship when sinking
 - Move slower in water when damaged
 
 ``` TRANSITION ```
-- Add prep phaze (UI)
 - Work on UI in general
 
 ``` SHIPFIGHT ```

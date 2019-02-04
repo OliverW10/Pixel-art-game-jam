@@ -28,7 +28,7 @@ global gameState
 gameState = "Cutscene"
 global MAP, MENU, F, PREP, SETTINGS
 frameTime = 0
-MAP = MENU = F = PREP = SETTINGS = AttrDict({})
+MAP = MENU = F = PREP = SHOP = SETTINGS = AttrDict({})
 Keys = {"W": False, "A": False, "S": False, "D": False, "E": False}
 F.inventory = {"sailors": [], "cannonballs": 0, "nets": 0}
 
@@ -50,11 +50,22 @@ MAP["PlayerCargo"] = {
 	"nets": 2,
 	"cannon": 2,
 	"sailors": [],
-	"Gold" : 100
+	"Gold": 100,
 }  # Inventory
-MAP["PlayerStats"] = {"speed": 5, "armor": 1, "HP": 10}
+MAP["Stats"] = {
+	"speed": [3, 5, 7, 10],
+	"armor": [1.3, 1.15, 1, 0.8],
+	"HP": [50, 60, 75, 100, 150, 250, 350, 500],
+}
+MAP["PlayerLevels"] = {"speed": 0, "armor": 0, "HP": 0}
+MAP["PlayerStats"] = {
+	"speed": MAP["Stats"]["speed"][MAP["PlayerLevels"]["speed"]],
+	"armor": MAP["Stats"]["armor"][MAP["PlayerLevels"]["armor"]],
+	"HP": MAP["Stats"]["HP"][MAP["PlayerLevels"]["HP"]],
+}
+SHOP["UpgradeCosts"] = {"speed" : [100, 500, 1200, 3000],"armor" : [200, 1000, 2000, 6000], "HP" : [50, 100, 200, 500, 1000, 1500, 2000]}
+#                          total 6800                             total 9200                        total 5350
 MAP["ShipDrawPos"] = [displayWidth / 2, displayHeight / 2]
-MAP["ActualDrawShip"] = MAP["ShipDrawPos"][:]
 MAP["waveList"] = []
 MAP["WindDir"] = (
 	math.pi * 1.5
@@ -184,8 +195,13 @@ MENU["ButtonPlay"] = loadImage("menuAssets/playButton.png")
 MENU["ButtonOptions"] = loadImage("menuAssets/optionsButton.png")
 MENU["ButtonQuit"] = loadImage("menuAssets/quitButton.png")
 
-MAP["BuyBoard"] = loadImage("mapAssets/buy board.png")
-MAP["BuyBoard"] = pygame.transform.scale(MAP["BuyBoard"], (displayWidth, displayHeight))
+SHOP["BuyBoard"] = loadImage("mapAssets/buy board.png")
+SHOP["BuyBoard"] = pygame.transform.scale(
+	SHOP["BuyBoard"], (displayWidth, displayHeight)
+)
+SHOP["shopXbutton"] = loadImage("mapAssets/shopXbutton.png")
+SHOP["shopXbutton"] = pygame.transform.scale(SHOP["shopXbutton"], (60, 84))
+
 PREP["Gun"] = loadImage("fightAssets/items/pistol.png")
 PREP["CannonBall"] = loadImage("fightAssets/items/cannonBall.png")
 PREP["Paper"] = loadImage("mapAssets/paper.png")
@@ -194,6 +210,8 @@ PREP["FightButtonRect"] = pygame.Rect(
 	displayWidth * 0.85, displayHeight * 0.9, displayWidth * 0.14, displayHeight * 0.09
 )
 PREP["Text"] = {}
+PREP["Xbutton"] = loadImage("mapAssets/prepXbutton.png")
+
 
 class sparkle:
 	def __init__(self, X, Y):
@@ -205,10 +223,38 @@ class sparkle:
 	def do(self, move):
 		self.X += move[0]
 		self.Y += move[1]
-		self.delChance = None  # Alogothithm which ranks the rareness of where it is
+		xdist = abs(displayWidth/2 - self.X)
+		self.delChance = xdist * self.Y*2 # Alogothithm which ranks the rareness of where it is
+		print(self.delChance)
 		if random.random() > self.delChance:
 			self.visable = False
 		pygame.draw.rect(screenDisplay, (200, 200, 255), (self.X, self.Y, 5, 5))
+
+
+def text_objects(message, font, colour):
+	textSurface = font.render(message, True, colour)
+	return textSurface, textSurface.get_rect()
+
+
+class text:
+	def __init__(self, message, X, Y, size, colour):
+		self.message = message
+		self.font = pygame.font.Font("FantasticBoogaloo.ttf", round(size * 1.5))
+		self.surf, self.rect = text_objects(self.message, self.font, colour)
+		self.X = X
+		self.Y = Y
+		self.rect.center = (self.X, self.Y)
+
+	def changeMessage(self, newMessage, colour):
+		self.messsage = newMessage
+		self.surf, self.rect = text_objects(self.message, self.font, colour)
+		self.rect.center = (self.X, self.Y)
+
+	def draw(self):
+		screenDisplay.blit(self.surf, self.rect)
+
+	#def move(self, X, Y):
+	#	self.rect.center = (X, Y)
 
 
 class sailor:
@@ -430,7 +476,7 @@ for i in range(10):
 		)
 	)
 
-MAP["Text"]["Gold"] = text("Gold: "+str(MAP["Stat"]))
+# MAP["Text"]["Gold"] = text("Gold: "+str(MAP["Stat"]))
 
 # GAME STATES (Functions)
 def map():
@@ -673,22 +719,56 @@ def cutScene():  # Need to make
 	gameState = "Menu"
 
 
+SHOP["Text"]["Speed"] = text(
+	"Speed: " + str(SHOP["UpgradeCosts"]["speed"][MAP["PlayerLevels"]["speed"]]),
+	displayWidth * 0.3,
+	displayHeight * 0.4,
+	30,
+	(10, 10, 10),
+)
+SHOP["Text"]["Armor"] = text(
+	"Armor: " + str(SHOP["UpgradeCosts"]["armor"][MAP["PlayerLevels"]["armor"]]),
+	displayWidth * 0.3,
+	displayHeight * 0.5,
+	30,
+	(10, 10, 10),
+)
+SHOP["Text"]["HP"] = text("HP: " + str(SHOP["UpgradeCosts"]["HP"][MAP["PlayerLevels"]["HP"]]), displayWidth * 0.3, displayHeight*0.6, 30, (10, 10, 10))
+
 def shop():
 	screenDisplay.blit(MAP["BuyBoard"], (0, 0))
-	game_print(
-		"Speed: " + str(MAP["PlayerStats"]["speed"]),
-		displayWidth * 0.2,
-		displayHeight * 0.3,
-		20,
+	hover = (5, 5)
+	if (
+		pygame.Rect(displayWidth * 0.05 + 5, 29, 60, 60).collidepoint(
+			mousePos[0], mousePos[1]
+		)
+		== True
+	):
+		if mouseButtons[0] == True:
+			global gameState
+			gameState = "Map"
+		hover = (2, 2)
+	pygame.draw.rect(
+		screenDisplay,
+		(50, 50, 0),
+		(displayWidth * 0.05 + hover[0], 24 + hover[1], 60, 60),
+	)
+	screenDisplay.blit(SHOP["shopXbutton"], (displayWidth * 0.05, 0))
+	SHOP["Text"]["Speed"].changeMessage(
+		"Speed: " + str(SHOP["UpgradeCosts"]["speed"][MAP["PlayerLevels"]["speed"]]),
 		(10, 10, 10),
 	)
-	game_print(
-		"Armor: " + str(MAP["PlayerStats"]["armor"]),
-		displayWidth * 0.2,
-		displayHeight * 0.35,
-		20,
+	SHOP["Text"]["Armor"].changeMessage(
+		"Speed: " + str(SHOP["UpgradeCosts"]["armor"][MAP["PlayerLevels"]["armor"]]),
 		(10, 10, 10),
 	)
+	SHOP["Text"]["HP"].changeMessage(
+		"Speed: " + str(SHOP["UpgradeCosts"]["HP"][MAP["PlayerLevels"]["HP"]]),
+		(10, 10, 10),
+	)
+	SHOP["Text"]["Speed"].draw()
+	SHOP["Text"]["Armor"].draw()
+	SHOP["Text"]["HP"].draw()
 
 
 ### Other funtions ###
@@ -759,28 +839,13 @@ def MapUI(wind, pirateShips):
 		shop()
 
 
-def text_objects(message, font, colour):
-	textSurface = font.render(message, True, colour)
-	return textSurface, textSurface.get_rect()
-
-class text:
-	def __init__(self, message, X, Y, size, colour):
-		self.font = pygame.font.Font("FantasticBoogaloo.ttf", round(size*1.5))
-		self.surf, self.rect = text_objects(message, self.font, colour)
-		self.rect.center = (X, Y)
-
-	def draw(self):
-		screenDisplay.blit(self.surf, self.rect)
-
-	def set(self, message, X, Y, size, colour):
-		self.surf, self.rect = text_objects(message, self.font, colour)
-		self.rect.center = (X, Y)
-
-
 PREP["Text"]["Prepare"] = text("Prepare for battle", displayWidth * 0.55, displayHeight * 0.2, 25, (20, 20, 0))
 PREP["Text"]["Cargo"] = text("Cargo hold", displayWidth * 0.3, displayHeight * 0.3, 20, (20, 20, 0))
 PREP["Text"]["Deck"] = text("On deck", displayWidth * 0.7, displayHeight * 0.3, 20, (20, 20, 0))
 PREP["Text"]["Living"] = text("Living quarters", displayWidth * 0.3, displayHeight * 0.6, 20, (20, 20, 0))
+PREP["Text"]["Fight"] = text("Fight", displayWidth * 0.9, displayHeight * 0.95, 10, (0, 0, 0))
+
+
 def prepMenu(playerCargo, enemyCargo):
 	global gameState
 	screenDisplay.blit(PREP["Paper"], (0, 0))
@@ -799,7 +864,7 @@ def prepMenu(playerCargo, enemyCargo):
 			displayHeight * 0.09,
 		),
 	)
-	game_print("Fight", displayWidth * 0.9, displayHeight * 0.95, 10, (0, 0, 0))
+	PREP["Text"]["Fight"].draw()
 	if (
 		PREP["FightButtonRect"].collidepoint(mousePos[0], mousePos[1])
 		and mouseButtons[0] == True
@@ -835,6 +900,7 @@ def dist(point1, point2):
 	Y = abs(point1[1] - point2[1])
 	return math.sqrt(X ** 2 + Y ** 2)
 
+
 def testCollision(point):
 	collide = islandArray[int(point[0] / 25)][int(point[1] / 25)]
 	if collide == 4:
@@ -845,16 +911,6 @@ def testCollision(point):
 		return True
 	else:
 		return False
-
-
-def game_print(message, posX, posY, size, colour):
-	text = pygame.font.Font("FantasticBoogaloo.ttf", round(size * 1.5))
-	text_surf, text_rect = text_objects(message, text, colour)
-	text_rect.center = (posX, posY)
-	screenDisplay.blit(
-		text_surf, text_rect
-	)  # GAme prints cause serious performace issues
-
 
 def QUIT():
 	pygame.quit()
