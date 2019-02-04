@@ -39,6 +39,7 @@ if MAP["SparkleType"] == 0:
 	MAP["WaterReflectionsCount"] = 0
 	MAP["WaterReflectionsPos"] = [0, 0]
 	MAP["lastReflectSprite"] = 0
+
 MAP["PirateShips"] = []
 MAP["AreaSize"] = [displayWidth * 3, displayHeight * 3]
 MAP["PlayerPos"] = [MAP["AreaSize"][0] / 2, MAP["AreaSize"][0] / 2]
@@ -217,19 +218,35 @@ class sparkle:
 	def __init__(self, X, Y):
 		self.X = X
 		self.Y = Y
-		self.visable = True
+		self.swap = False
 		#          (x, y),
 
 	def do(self, move):
 		self.X += move[0]
 		self.Y += move[1]
-		xdist = abs(displayWidth/2 - self.X)
-		self.delChance = xdist * self.Y*2 # Alogothithm which ranks the rareness of where it is
+		self.delChance = self.checkRarety()
 		print(self.delChance)
-		if random.random() > self.delChance:
-			self.visable = False
+		self.checkMove()
 		pygame.draw.rect(screenDisplay, (200, 200, 255), (self.X, self.Y, 5, 5))
 
+	def checkRarety(self):
+		temp = abs( self.X - displayWidth / 2 )
+		temp += ( -self.Y ) ** 3 / 1000000
+		return temp
+
+	def checkMove(self):
+		if self.delChance > 60 or self.Y > displayHeight:
+			self.swap = True
+			self.delChance = self.checkRarety()
+			self.checkMove()
+
+	def reset(self):
+		self.X, self.Y = random.randint(0, displayWidth), random.randint(0, displayHeight)
+
+if MAP["SparkleType"] == 1:
+	MAP["Sparkles"] = []
+	for i in range(1000):
+		MAP["Sparkles"].append(sparkle(random.randint(0, displayWidth), random.randint(0, displayHeight)))
 
 def text_objects(message, font, colour):
 	textSurface = font.render(message, True, colour)
@@ -506,6 +523,13 @@ def map():
 		if MAP["lastReflectSprite"] != round(MAP["WaterReflectionsCount"] * 4):
 			MAP["WaterReflectionsPos"] = [0, 0]
 		MAP["lastReflectSprite"] = round(MAP["WaterReflectionsCount"] * 4)
+
+	if MAP["SparkleType"] == 1:
+		for i in range(len(MAP["Sparkles"])):
+			MAP["Sparkles"][i].do((-MAP["PlayerSpeed"][0], -MAP["PlayerSpeed"][1]))
+			if MAP["Sparkles"][i].swap == True:
+				MAP["Sparkles"][i].reset()
+
 
 	pygame.draw.rect(
 		screenDisplay,
