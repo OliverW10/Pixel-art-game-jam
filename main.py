@@ -10,6 +10,7 @@ import numpy as np
 displayWidth, displayHeight = 800, 600
 pygame.init()
 screenDisplay = pygame.display.set_mode((displayWidth, displayHeight))
+gameDisplay = pygame.Surface((displayWidth, displayHeight))
 pygame.display.set_caption("aiden hasnt done anything")
 clock = pygame.time.Clock()
 loadImage = pygame.image.load
@@ -84,6 +85,9 @@ MAP["MiniMapDrawList"] = {}  # actually a dictionary but ctr + h is too hard`
 MAP.WaveSpawnTimer = 0
 PREP.EnemyCargo = {}
 
+shakePos = [0,0]
+shakeVol = [random.random()*4-2, random.random()*4-2]
+print(shakeVol)
 # WaterReflections
 if MAP["SparkleType"] == 0:
 	for p in range(10):
@@ -230,7 +234,7 @@ class sparkle:
 		self.Y += move[1]
 		self.delChance = self.checkRarety()
 		self.checkMove()
-		pygame.draw.rect(screenDisplay, (200, 200, 255), (self.X, self.Y, 5, 5))
+		pygame.draw.rect(gameDisplay, (200, 200, 255), (self.X, self.Y, 5, 5))
 
 	def checkRarety(self):
 		temp = abs(
@@ -290,7 +294,7 @@ class text:
 		self.rect.center = (self.X, self.Y)
 
 	def draw(self):
-		screenDisplay.blit(self.surf, self.rect)
+		gameDisplay.blit(self.surf, self.rect)
 
 		# def move(self, X, Y):
 		# 	self.rect.center = (X, Y)
@@ -376,7 +380,7 @@ class sailor:
 		if Pos == None:
 			Pos = [self.dragX, self.dragY]
 		drawSprite = pygame.transform.scale(self.sprite, (Size))
-		screenDisplay.blit(drawSprite, Pos)
+		gameDisplay.blit(drawSprite, Pos)
 
 
 MAP["PlayerCargo"]["sailors"] = [sailor(3), sailor(2), sailor(2)]
@@ -411,7 +415,7 @@ class wave:
 
 		self.X += math.sin(MAP["WindDir"]) * MAP["WindSpeed"] * frameTime
 		self.Y += math.cos(MAP["WindDir"]) * MAP["WindSpeed"] * frameTime
-		screenDisplay.blit(
+		gameDisplay.blit(
 			MAP.waves[self.size],
 			(self.X - MAP["ScreenPos"][0], self.Y - MAP["ScreenPos"][1]),
 		)
@@ -489,7 +493,7 @@ class PirateShip:
 		if dist((self.drawX, self.drawY), (mousePos[0], mousePos[1])) < 50:
 			self.hovered = True
 			pygame.draw.rect(
-				screenDisplay,
+				gameDisplay,
 				(0, 0, 0),
 				(self.drawX - 5, self.drawY - 10, (self.HP / self.maxHP) * 40, 5),
 			)
@@ -501,7 +505,7 @@ class PirateShip:
 			and self.drawY > -20
 			and self.drawY < displayHeight + 20
 		):  # this for some reason makes it run 10-20% worse
-			screenDisplay.blit(
+			gameDisplay.blit(
 				MAP["pirateShipsSprites"][self.type][self.dir], (self.drawX, self.drawY)
 			)
 
@@ -523,7 +527,7 @@ def map():
 	global MAP
 	global gameState
 	MAP["MiniMapDrawList"] = {}
-	screenDisplay.fill((0, 0, 200))
+	gameDisplay.fill((0, 0, 200))
 
 	if MAP["SparkleType"] == 0:
 		MAP["WaterReflectionsPos"][0] -= (
@@ -531,7 +535,7 @@ def map():
 		)
 		MAP["WaterReflectionsPos"][1] -= MAP["PlayerSpeed"][1]
 
-		screenDisplay.blit(
+		gameDisplay.blit(
 			MAP["WaterReflections"][round(MAP["WaterReflectionsCount"] * 4)],
 			(MAP["WaterReflectionsPos"][0], MAP["WaterReflectionsPos"][1]),
 		)
@@ -556,7 +560,7 @@ def map():
 			)
 
 	pygame.draw.rect(
-		screenDisplay,
+		gameDisplay,
 		(0, 0, 0),
 		(
 			-MAP["ScreenPos"][0],
@@ -567,7 +571,7 @@ def map():
 		5,
 	)
 	pygame.draw.line(
-		screenDisplay,
+		gameDisplay,
 		(0, 0, 0),
 		(0 - MAP["ScreenPos"][0], 0 - MAP["ScreenPos"][1]),
 		(
@@ -576,7 +580,7 @@ def map():
 		),
 	)
 	pygame.draw.line(
-		screenDisplay,
+		gameDisplay,
 		(0, 0, 0),
 		(MAP["AreaSize"][0] - MAP["ScreenPos"][0], 0 - MAP["ScreenPos"][1]),
 		(0 - MAP["ScreenPos"][0], MAP["AreaSize"][1] - MAP["ScreenPos"][1]),
@@ -687,7 +691,7 @@ def map():
 			and drawY > -25
 			and drawY < displayHeight
 		):
-			pygame.draw.rect(screenDisplay, (colour), (drawX, drawY, 25, 25))
+			pygame.draw.rect(gameDisplay, (colour), (drawX, drawY, 25, 25))
 			# Pirates
 	for i in range(len(MAP["PirateShips"])):
 		MAP["PirateShips"][i].AI()
@@ -695,7 +699,7 @@ def map():
 		MAP["PirateShips"][i].draw()
 		# Player
 	drawShip = MAP["ships"][MAP["PlayerDir"]]
-	screenDisplay.blit(
+	gameDisplay.blit(
 		drawShip,
 		(
 			MAP["PlayerPos"][0] - MAP["ScreenPos"][0] - 15,
@@ -703,7 +707,7 @@ def map():
 		),
 	)
 	pygame.draw.rect(
-		screenDisplay,
+		gameDisplay,
 		(0, 0, 0),
 		(
 			MAP["PlayerPos"][0] - MAP["ScreenPos"][0],
@@ -725,10 +729,10 @@ mapTime = 0.1
 def menu():
 	global gameState
 	# Display Assets
-	screenDisplay.fill((154, 219, 235))
-	playButton = screenDisplay.blit(MENU["ButtonPlay"], (275, 255))
-	optionsButton = screenDisplay.blit(MENU["ButtonOptions"], (275, 377))
-	quitButton = screenDisplay.blit(MENU["ButtonQuit"], (275, 500))
+	gameDisplay.fill((154, 219, 235))
+	playButton = gameDisplay.blit(MENU["ButtonPlay"], (275, 255))
+	optionsButton = gameDisplay.blit(MENU["ButtonOptions"], (275, 377))
+	quitButton = gameDisplay.blit(MENU["ButtonQuit"], (275, 500))
 
 	"""Add code"""
 	if playButton.collidepoint(mousePos[0], mousePos[1]) and mouseButtons[0]:
@@ -742,12 +746,12 @@ def menu():
 
 
 def optionsPage():
-	screenDisplay.fill((154, 219, 235))
+	gameDisplay.fill((154, 219, 235))
 	###################################
 
 
 def drawCannonball(X, Y, size=10):
-	pygame.draw.circle(screenDisplay, (0, 0, 0), (int(X), int(Y)), size)
+	pygame.draw.circle(gameDisplay, (0, 0, 0), (int(X), int(Y)), size)
 
 
 class cannonBall:
@@ -788,9 +792,9 @@ class button:
 		return False
 
 	def draw(self, hover):
-		pygame.draw.rect(screenDisplay, (0, 0, 0), (self.X, self.Y, self.W, self.H), 10)
+		pygame.draw.rect(gameDisplay, (0, 0, 0), (self.X, self.Y, self.W, self.H), 10)
 		pygame.draw.rect(
-			screenDisplay,
+			gameDisplay,
 			(255, 255, 255),
 			(self.X + hover[0], self.Y + hover[1], self.W, self.H),
 		)
@@ -821,11 +825,11 @@ F.projectiles = []
 
 
 def battleScreen():
-	screenDisplay.fill((255, 255, 255))
+	gameDisplay.fill((255, 255, 255))
 	# Display Assets
-	screenDisplay.blit(F.placeHolders[0], (0, 0))
-	screenDisplay.blit(F.placeHolders[1], (50, 250))
-	screenDisplay.blit(F.placeHolders[2], (585, 250))
+	gameDisplay.blit(F.placeHolders[0], (0, 0))
+	gameDisplay.blit(F.placeHolders[1], (50, 250))
+	gameDisplay.blit(F.placeHolders[2], (585, 250))
 	for i in slotButtons:
 		if slotButtons[i].run() == True:
 			F.mode = i
@@ -835,7 +839,7 @@ def battleScreen():
 			xvol = displayWidth * 0.2 - mousePos[0]
 			yvol = displayHeight * 0.6 - mousePos[1]
 			pygame.draw.line(
-				screenDisplay,
+				gameDisplay,
 				(100, 100, 100),
 				(displayWidth * 0.2, displayHeight * 0.6),
 				(displayWidth * 0.2 + xvol * 7, displayHeight * 0.6 + yvol * 7),
@@ -847,6 +851,7 @@ def battleScreen():
 			F.projectiles.append(
 				cannonBall(displayWidth * 0.2, displayHeight * 0.6, xvol, yvol)
 			)
+			shakeController([random.random()*4-2, random.random()*4-2], 0.5)
 			F.pressed = False
 
 	for i in range(len(F.projectiles)):
@@ -855,7 +860,7 @@ def battleScreen():
 
 def cutScene():  # Need to make
 	global gameState
-	gameState = "Fight"
+	gameState = "Menu"
 
 
 SHOP["Text"]["Speed"] = text(
@@ -882,7 +887,7 @@ SHOP["Text"]["HP"] = text(
 
 
 def shop():
-	screenDisplay.blit(MAP["BuyBoard"], (0, 0))
+	gameDisplay.blit(MAP["BuyBoard"], (0, 0))
 	hover = (5, 5)
 	if (
 		pygame.Rect(displayWidth * 0.05 + 5, 29, 60, 60).collidepoint(
@@ -895,11 +900,11 @@ def shop():
 			gameState = "Map"
 		hover = (2, 2)
 	pygame.draw.rect(
-		screenDisplay,
+		gameDisplay,
 		(50, 50, 0),
 		(displayWidth * 0.05 + hover[0], 24 + hover[1], 60, 60),
 	)
-	screenDisplay.blit(SHOP["shopXbutton"], (displayWidth * 0.05, 0))
+	gameDisplay.blit(SHOP["shopXbutton"], (displayWidth * 0.05, 0))
 	SHOP["Text"]["Speed"].changeMessage(
 		"Speed: " + str(SHOP["UpgradeCosts"]["speed"][MAP["PlayerLevels"]["speed"]]),
 		(10, 10, 10),
@@ -930,7 +935,7 @@ def waveDeleter():
 def miniMap(windDir, windSpeed, zoom):
 	center = (round(displayWidth * 0.1), round(displayHeight * 0.9))
 	pygame.draw.circle(
-		screenDisplay,
+		gameDisplay,
 		(30, 50, 230),
 		(center[0], center[1]),
 		round(displayWidth * 0.07),
@@ -945,7 +950,7 @@ def miniMap(windDir, windSpeed, zoom):
 			drawX = (drawX / zoom) + center[0]
 			drawY = (drawY / zoom) + center[1]
 			pygame.draw.rect(
-				screenDisplay,
+				gameDisplay,
 				(0, 0, 0),
 				(drawX, drawY, round(25 / zoom) + 1, round(25 / zoom) + 1),
 			)
@@ -958,17 +963,17 @@ def miniMap(windDir, windSpeed, zoom):
 			drawX = (drawX / zoom) + center[0]
 			drawY = (drawY / zoom) + center[1]
 			pygame.draw.rect(
-				screenDisplay,
+				gameDisplay,
 				(255, 0, 0),
 				(drawX, drawY, round(25 / zoom) + 1, round(25 / zoom) + 1),
 			)
 
 	pygame.draw.circle(
-		screenDisplay, (0, 0, 0), (center[0], center[1]), round(displayWidth * 0.07), 5
+		gameDisplay, (0, 0, 0), (center[0], center[1]), round(displayWidth * 0.07), 5
 	)
 	lineP1 = (math.sin(windDir) * windSpeed * 2, math.cos(windDir) * windSpeed * 2)
 	pygame.draw.line(
-		screenDisplay,
+		gameDisplay,
 		(100, 100, 120),
 		(lineP1[0] + center[0], lineP1[1] + center[1]),
 		(center[0], center[1]),
@@ -1004,14 +1009,14 @@ PREP["Text"]["Fight"] = text(
 
 def prepMenu(playerCargo, enemyCargo):
 	global gameState
-	screenDisplay.blit(PREP["Paper"], (0, 0))
+	gameDisplay.blit(PREP["Paper"], (0, 0))
 	# GAme prints cause serious performace issues
 	PREP["Text"]["Prepare"].draw()
 	PREP["Text"]["Cargo"].draw()
 	PREP["Text"]["Deck"].draw()
 	PREP["Text"]["Living"].draw()
 	pygame.draw.rect(
-		screenDisplay,
+		gameDisplay,
 		(10, 200, 30),
 		(
 			displayWidth * 0.85,
@@ -1073,6 +1078,40 @@ def QUIT():
 	pygame.quit()
 	exit()
 
+shakeEndTimer = 0
+def shakeController(shake, timer):
+	global shakePos
+	global shakeVol
+	global shakeEndTimer
+
+	shakeVol[0] += shake[0]
+	shakeVol[1] += shake[1]
+
+	shakePos[0] += shakeVol[0]
+	shakePos[1] += shakeVol[1]
+
+	if shakePos[1] > -0:
+		shakeVol[1]-=frameTime * 50
+	elif shakePos[1] < 0:
+		shakeVol[1]+=frameTime * 50
+	if shakePos[0] > -0:
+		shakeVol[0]-=frameTime * 50
+	elif shakePos[0] < 0:
+		shakeVol[0]+=frameTime * 50
+	shakeVol[0] -= shakeVol[0]*frameTime*1
+	shakeVol[1] -= shakeVol[1]*frameTime*1
+
+	if timer != None:
+		shakeEndTimer = timer
+	shakeEndTimer -= frameTime
+	if shakeEndTimer < 0:
+		shakeVol = [0,0]
+		shakePos = [0,0]
+
+	if round(shakeVol[0]*5) == 0 and round(shakeVol[1]*5) == 0:
+		shakeVol = [0,0]
+
+
 
 # Main Loop
 while True:
@@ -1113,6 +1152,10 @@ while True:
 		map()
 	if gameState == "Fight":
 		battleScreen()
+	
+	shakeController([0,0], None)
+
+	screenDisplay.blit(gameDisplay, shakePos)
 	pygame.display.update()
 	clock.tick()
 	frameTime = time.time() - startFrame
