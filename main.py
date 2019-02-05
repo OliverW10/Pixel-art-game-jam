@@ -10,7 +10,7 @@ import numpy as np
 displayWidth, displayHeight = 800, 600
 pygame.init()
 screenDisplay = pygame.display.set_mode((displayWidth, displayHeight))
-pygame.display.set_caption("we still need a name for our game")
+pygame.display.set_caption("aiden hasnt done anything")
 clock = pygame.time.Clock()
 loadImage = pygame.image.load
 
@@ -33,7 +33,7 @@ Keys = {"W": False, "A": False, "S": False, "D": False, "E": False}
 F.inventory = {"sailors": [], "cannonballs": 0, "nets": 0}
 
 # MAP variables
-MAP["SparkleType"] = 1  # 0 is shit, 1 is fps low and 2 is off
+MAP["SparkleType"] = 1 # 0 is shit, 1 is fps low and 2 is off
 if MAP["SparkleType"] == 0:
 	MAP["WaterReflections"] = []
 	MAP["WaterReflectionsCount"] = 0
@@ -225,18 +225,16 @@ class sparkle:
 		self.X += move[0]
 		self.Y += move[1]
 		self.delChance = self.checkRarety()
-		print(self.delChance)
 		self.checkMove()
 		pygame.draw.rect(screenDisplay, (200, 200, 255), (self.X, self.Y, 5, 5))
 
 	def checkRarety(self):
-		temp = abs( self.X - displayWidth / 2 )
-		temp += ( -self.Y ) ** 3 / 1000000
+		temp = abs(displayWidth/2 - self.X)#dist((self.X, self.Y), (displayWidth/2, displayHeight/2))
 		return temp
 
 	def checkMove(self):
-		if self.delChance > 60 or self.Y > displayHeight:
-			self.swap = True
+		if abs(self.delChance)+(random.randint(-100, 100) + random.randint(-100, 100) + random.randint(-100, 100))/3 > 100 or self.Y > displayHeight or self.Y < 0:
+			self.reset()
 			self.delChance = self.checkRarety()
 			self.checkMove()
 
@@ -245,7 +243,7 @@ class sparkle:
 
 if MAP["SparkleType"] == 1:
 	MAP["Sparkles"] = []
-	for i in range(1000):
+	for i in range(200):
 		MAP["Sparkles"].append(sparkle(random.randint(0, displayWidth), random.randint(0, displayHeight)))
 
 def text_objects(message, font, colour):
@@ -526,9 +524,7 @@ def map():
 
 	if MAP["SparkleType"] == 1:
 		for i in range(len(MAP["Sparkles"])):
-			MAP["Sparkles"][i].do((-MAP["PlayerSpeed"][0], -MAP["PlayerSpeed"][1]))
-			if MAP["Sparkles"][i].swap == True:
-				MAP["Sparkles"][i].reset()
+			MAP["Sparkles"][i].do((-MAP["PlayerSpeed"][0] * frameTime * 30, -MAP["PlayerSpeed"][1] * frameTime * 30))
 
 
 	pygame.draw.rect(
@@ -721,26 +717,88 @@ def optionsPage():
 	screenDisplay.fill((154, 219, 235))
 	###################################
 
+def drawCannonball(X, Y, size = 10):
+	pygame.draw.circle(screenDisplay, (0,0,0), (int(X), int(Y)), size)
+
+class cannonBall:
+	def __init__(self, X, Y, Xvol ,Yvol):
+		self.X, self.Y = X, Y
+		self.Xvol, self.Yvol = Xvol, Yvol
+
+	def run(self):
+		self.X += self.Xvol * frameTime * 20
+		self.Y += self.Yvol * frameTime * 20
+		self.Yvol += frameTime * 30
+		self.draw()
+
+	def draw(self):
+		drawCannonball(self.X, self.Y)
+
+class button:
+	def __init__(self, X, Y, W, H, draw): #draw should be a list of functions that take X, Y to be drawn on the button
+		self.X = X
+		self.Y = Y
+		self.W = W
+		self.H = H
+		self.rect = pygame.Rect(X, Y, W, H)
+		self.drawList = draw
+
+	def run(self):
+		if self.rect.collidepoint(mousePos) == True:
+			if mouseButtons[0] == True:
+				self.draw((1, 1))
+				return True
+			else:
+				self.draw((3, 3))
+		else:
+			self.draw((5, 5))
+		return False
+
+	def draw(self, hover):
+		pygame.draw.rect(screenDisplay, (0,0,0), (self.X, self.Y, self.W, self.H), 10)
+		pygame.draw.rect(screenDisplay, (255,255, 255), (self.X+hover[0],  self.Y+hover[1], self.W, self.H))
+		for i in range(len(self.drawList)):
+			self.drawList[i](self.X+self.W/2 +hover[0], self.Y+self.H/2+hover[1])
+
+slotButtons = {"cannon" : button(displayWidth*0.05, displayHeight*0.9, displayWidth*0.07, displayWidth*0.07, [drawCannonball])}
+
+F.placeHolders = [loadImage("fightAssets/background.png"),
+loadImage("fightAssets/friendlyShip.png"),
+loadImage("fightAssets/enemyShip.png")]
+F.mode = "nothing"
+F.pressed = True
+F.projectiles = []
+
 
 def battleScreen():
+	screenDisplay.fill((255,255,255))
 	# Display Assets
-	screenDisplay.blit(loadImage("fightAssets/background.png"), (0, 0))
-	screenDisplay.blit(loadImage("fightAssets/friendlyShip.png"), (50, 250))
-	screenDisplay.blit(loadImage("fightAssets/enemyShip.png"), (585, 250))
-	slots_drawn = 0
-	for item in F["inventory"]:
-		slots_drawn += 1
-		screenDisplay.blit(
-			loadImage(f"fightAssets/INV_{item}.png"),
-			(30 * slots_drawn + 50 * slots_drawn, 515),
-		)
+	screenDisplay.blit(F.placeHolders[0], (0, 0))
+	screenDisplay.blit(F.placeHolders[1], (50, 250))
+	screenDisplay.blit(F.placeHolders[2], (585, 250))
+	for i in slotButtons:
+		if slotButtons[i].run()  == True:
+			F.mode = i
 
-	"""Behaviorial script"""
+	if F.mode == "cannon":
+		if mouseButtons[0] == True:
+			xvol = displayWidth*0.2 - mousePos[0]
+			yvol = displayHeight*0.6 - mousePos[1]
+			pygame.draw.line(screenDisplay, (100, 100, 100), (displayWidth * 0.2, displayHeight * 0.6), (displayWidth * 0.2 +xvol*7, displayHeight * 0.6 +yvol*7))
+			F.pressed = True
+		elif F.pressed == True:
+			xvol = displayWidth*0.2 - mousePos[0]
+			yvol = displayHeight*0.6 - mousePos[1]
+			F.projectiles.append(cannonBall(displayWidth*0.2, displayHeight*0.6, xvol, yvol))
+			F.pressed = False
 
+	for i in range(len(F.projectiles)):
+		F.projectiles[i].run()
+ 
 
 def cutScene():  # Need to make
 	global gameState
-	gameState = "Menu"
+	gameState = "Fight"
 
 
 SHOP["Text"]["Speed"] = text(
