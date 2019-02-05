@@ -33,7 +33,7 @@ Keys = {"W": False, "A": False, "S": False, "D": False, "E": False}
 F.inventory = {"sailors": [], "cannonballs": 0, "nets": 0}
 
 # MAP variables
-MAP["SparkleType"] = 1 # 0 is shit, 1 is fps low and 2 is off
+MAP["SparkleType"] = 1  # 0 is shit, 1 is fps low and 2 is off
 if MAP["SparkleType"] == 0:
 	MAP["WaterReflections"] = []
 	MAP["WaterReflectionsCount"] = 0
@@ -64,7 +64,11 @@ MAP["PlayerStats"] = {
 	"armor": MAP["Stats"]["armor"][MAP["PlayerLevels"]["armor"]],
 	"HP": MAP["Stats"]["HP"][MAP["PlayerLevels"]["HP"]],
 }
-SHOP["UpgradeCosts"] = {"speed" : [100, 500, 1200, 3000],"armor" : [200, 1000, 2000, 6000], "HP" : [50, 100, 200, 500, 1000, 1500, 2000]}
+SHOP["UpgradeCosts"] = {
+	"speed": [100, 500, 1200, 3000],
+	"armor": [200, 1000, 2000, 6000],
+	"HP": [50, 100, 200, 500, 1000, 1500, 2000],
+}
 #                          total 6800                             total 9200                        total 5350
 MAP["ShipDrawPos"] = [displayWidth / 2, displayHeight / 2]
 MAP["waveList"] = []
@@ -229,22 +233,42 @@ class sparkle:
 		pygame.draw.rect(screenDisplay, (200, 200, 255), (self.X, self.Y, 5, 5))
 
 	def checkRarety(self):
-		temp = abs(displayWidth/2 - self.X)#dist((self.X, self.Y), (displayWidth/2, displayHeight/2))
+		temp = abs(
+			displayWidth / 2 - self.X
+		)  # dist((self.X, self.Y), (displayWidth/2, displayHeight/2))
 		return temp
 
 	def checkMove(self):
-		if abs(self.delChance)+(random.randint(-100, 100) + random.randint(-100, 100) + random.randint(-100, 100))/3 > 100 or self.Y > displayHeight or self.Y < 0:
+		if (
+			abs(self.delChance)
+			+ (
+				random.randint(-100, 100)
+				+ random.randint(-100, 100)
+				+ random.randint(-100, 100)
+			)
+			/ 3
+			> 100
+			or self.Y > displayHeight
+			or self.Y < 0
+		):
 			self.reset()
 			self.delChance = self.checkRarety()
 			self.checkMove()
 
 	def reset(self):
-		self.X, self.Y = random.randint(0, displayWidth), random.randint(0, displayHeight)
+		self.X, self.Y = (
+			random.randint(0, displayWidth),
+			random.randint(0, displayHeight),
+		)
+
 
 if MAP["SparkleType"] == 1:
 	MAP["Sparkles"] = []
 	for i in range(200):
-		MAP["Sparkles"].append(sparkle(random.randint(0, displayWidth), random.randint(0, displayHeight)))
+		MAP["Sparkles"].append(
+			sparkle(random.randint(0, displayWidth), random.randint(0, displayHeight))
+		)
+
 
 def text_objects(message, font, colour):
 	textSurface = font.render(message, True, colour)
@@ -268,8 +292,8 @@ class text:
 	def draw(self):
 		screenDisplay.blit(self.surf, self.rect)
 
-	#def move(self, X, Y):
-	#	self.rect.center = (X, Y)
+		# def move(self, X, Y):
+		# 	self.rect.center = (X, Y)
 
 
 class sailor:
@@ -524,8 +548,12 @@ def map():
 
 	if MAP["SparkleType"] == 1:
 		for i in range(len(MAP["Sparkles"])):
-			MAP["Sparkles"][i].do((-MAP["PlayerSpeed"][0] * frameTime * 30, -MAP["PlayerSpeed"][1] * frameTime * 30))
-
+			MAP["Sparkles"][i].do(
+				(
+					-MAP["PlayerSpeed"][0] * frameTime * 30,
+					-MAP["PlayerSpeed"][1] * frameTime * 30,
+				)
+			)
 
 	pygame.draw.rect(
 		screenDisplay,
@@ -717,11 +745,13 @@ def optionsPage():
 	screenDisplay.fill((154, 219, 235))
 	###################################
 
-def drawCannonball(X, Y, size = 10):
-	pygame.draw.circle(screenDisplay, (0,0,0), (int(X), int(Y)), size)
+
+def drawCannonball(X, Y, size=10):
+	pygame.draw.circle(screenDisplay, (0, 0, 0), (int(X), int(Y)), size)
+
 
 class cannonBall:
-	def __init__(self, X, Y, Xvol ,Yvol):
+	def __init__(self, X, Y, Xvol, Yvol):
 		self.X, self.Y = X, Y
 		self.Xvol, self.Yvol = Xvol, Yvol
 
@@ -734,8 +764,11 @@ class cannonBall:
 	def draw(self):
 		drawCannonball(self.X, self.Y)
 
+
 class button:
-	def __init__(self, X, Y, W, H, draw): #draw should be a list of functions that take X, Y to be drawn on the button
+	def __init__(
+		self, X, Y, W, H, draw
+	):  # draw should be a list of functions that take X, Y to be drawn on the button
 		self.X = X
 		self.Y = Y
 		self.W = W
@@ -755,46 +788,70 @@ class button:
 		return False
 
 	def draw(self, hover):
-		pygame.draw.rect(screenDisplay, (0,0,0), (self.X, self.Y, self.W, self.H), 10)
-		pygame.draw.rect(screenDisplay, (255,255, 255), (self.X+hover[0],  self.Y+hover[1], self.W, self.H))
+		pygame.draw.rect(screenDisplay, (0, 0, 0), (self.X, self.Y, self.W, self.H), 10)
+		pygame.draw.rect(
+			screenDisplay,
+			(255, 255, 255),
+			(self.X + hover[0], self.Y + hover[1], self.W, self.H),
+		)
 		for i in range(len(self.drawList)):
-			self.drawList[i](self.X+self.W/2 +hover[0], self.Y+self.H/2+hover[1])
+			self.drawList[i](
+				self.X + self.W / 2 + hover[0], self.Y + self.H / 2 + hover[1]
+			)
 
-slotButtons = {"cannon" : button(displayWidth*0.05, displayHeight*0.9, displayWidth*0.07, displayWidth*0.07, [drawCannonball])}
 
-F.placeHolders = [loadImage("fightAssets/background.png"),
-loadImage("fightAssets/friendlyShip.png"),
-loadImage("fightAssets/enemyShip.png")]
+slotButtons = {
+	"cannon": button(
+		displayWidth * 0.05,
+		displayHeight * 0.9,
+		displayWidth * 0.07,
+		displayWidth * 0.07,
+		[drawCannonball],
+	)
+}
+
+F.placeHolders = [
+	loadImage("fightAssets/background.png"),
+	loadImage("fightAssets/friendlyShip.png"),
+	loadImage("fightAssets/enemyShip.png"),
+]
 F.mode = "nothing"
 F.pressed = True
 F.projectiles = []
 
 
 def battleScreen():
-	screenDisplay.fill((255,255,255))
+	screenDisplay.fill((255, 255, 255))
 	# Display Assets
 	screenDisplay.blit(F.placeHolders[0], (0, 0))
 	screenDisplay.blit(F.placeHolders[1], (50, 250))
 	screenDisplay.blit(F.placeHolders[2], (585, 250))
 	for i in slotButtons:
-		if slotButtons[i].run()  == True:
+		if slotButtons[i].run() == True:
 			F.mode = i
 
 	if F.mode == "cannon":
 		if mouseButtons[0] == True:
-			xvol = displayWidth*0.2 - mousePos[0]
-			yvol = displayHeight*0.6 - mousePos[1]
-			pygame.draw.line(screenDisplay, (100, 100, 100), (displayWidth * 0.2, displayHeight * 0.6), (displayWidth * 0.2 +xvol*7, displayHeight * 0.6 +yvol*7))
+			xvol = displayWidth * 0.2 - mousePos[0]
+			yvol = displayHeight * 0.6 - mousePos[1]
+			pygame.draw.line(
+				screenDisplay,
+				(100, 100, 100),
+				(displayWidth * 0.2, displayHeight * 0.6),
+				(displayWidth * 0.2 + xvol * 7, displayHeight * 0.6 + yvol * 7),
+			)
 			F.pressed = True
 		elif F.pressed == True:
-			xvol = displayWidth*0.2 - mousePos[0]
-			yvol = displayHeight*0.6 - mousePos[1]
-			F.projectiles.append(cannonBall(displayWidth*0.2, displayHeight*0.6, xvol, yvol))
+			xvol = displayWidth * 0.2 - mousePos[0]
+			yvol = displayHeight * 0.6 - mousePos[1]
+			F.projectiles.append(
+				cannonBall(displayWidth * 0.2, displayHeight * 0.6, xvol, yvol)
+			)
 			F.pressed = False
 
 	for i in range(len(F.projectiles)):
 		F.projectiles[i].run()
- 
+
 
 def cutScene():  # Need to make
 	global gameState
@@ -815,7 +872,14 @@ SHOP["Text"]["Armor"] = text(
 	30,
 	(10, 10, 10),
 )
-SHOP["Text"]["HP"] = text("HP: " + str(SHOP["UpgradeCosts"]["HP"][MAP["PlayerLevels"]["HP"]]), displayWidth * 0.3, displayHeight*0.6, 30, (10, 10, 10))
+SHOP["Text"]["HP"] = text(
+	"HP: " + str(SHOP["UpgradeCosts"]["HP"][MAP["PlayerLevels"]["HP"]]),
+	displayWidth * 0.3,
+	displayHeight * 0.6,
+	30,
+	(10, 10, 10),
+)
+
 
 def shop():
 	screenDisplay.blit(MAP["BuyBoard"], (0, 0))
@@ -921,11 +985,21 @@ def MapUI(wind, pirateShips):
 		shop()
 
 
-PREP["Text"]["Prepare"] = text("Prepare for battle", displayWidth * 0.55, displayHeight * 0.2, 25, (20, 20, 0))
-PREP["Text"]["Cargo"] = text("Cargo hold", displayWidth * 0.3, displayHeight * 0.3, 20, (20, 20, 0))
-PREP["Text"]["Deck"] = text("On deck", displayWidth * 0.7, displayHeight * 0.3, 20, (20, 20, 0))
-PREP["Text"]["Living"] = text("Living quarters", displayWidth * 0.3, displayHeight * 0.6, 20, (20, 20, 0))
-PREP["Text"]["Fight"] = text("Fight", displayWidth * 0.9, displayHeight * 0.95, 10, (0, 0, 0))
+PREP["Text"]["Prepare"] = text(
+	"Prepare for battle", displayWidth * 0.55, displayHeight * 0.2, 25, (20, 20, 0)
+)
+PREP["Text"]["Cargo"] = text(
+	"Cargo hold", displayWidth * 0.3, displayHeight * 0.3, 20, (20, 20, 0)
+)
+PREP["Text"]["Deck"] = text(
+	"On deck", displayWidth * 0.7, displayHeight * 0.3, 20, (20, 20, 0)
+)
+PREP["Text"]["Living"] = text(
+	"Living quarters", displayWidth * 0.3, displayHeight * 0.6, 20, (20, 20, 0)
+)
+PREP["Text"]["Fight"] = text(
+	"Fight", displayWidth * 0.9, displayHeight * 0.95, 10, (0, 0, 0)
+)
 
 
 def prepMenu(playerCargo, enemyCargo):
@@ -993,6 +1067,7 @@ def testCollision(point):
 		return True
 	else:
 		return False
+
 
 def QUIT():
 	pygame.quit()
