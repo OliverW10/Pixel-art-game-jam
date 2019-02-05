@@ -770,9 +770,7 @@ class cannonBall:
 
 
 class button:
-	def __init__(
-		self, X, Y, W, H, draw
-	):  # draw should be a list of functions that take X, Y to be drawn on the button
+	def __init__(self, X, Y, W, H, draw):  # draw should be a list of functions that take X, Y to be drawn on the button
 		self.X = X
 		self.Y = Y
 		self.W = W
@@ -780,16 +778,27 @@ class button:
 		self.rect = pygame.Rect(X, Y, W, H)
 		self.drawList = draw
 
-	def run(self):
-		if self.rect.collidepoint(mousePos) == True:
-			if mouseButtons[0] == True:
-				self.draw((1, 1))
-				return True
+	def run(self, down):
+		if down == True:
+			if self.rect.collidepoint(mousePos) == True:
+				if mouseButtons[0] == True:
+					self.draw((1, 1))
+					return True
+				else:
+					self.draw((3, 3))
 			else:
-				self.draw((3, 3))
+				self.draw((5, 5))
+			return False
 		else:
-			self.draw((5, 5))
-		return False
+			if self.rect.collidepoint(mousePos) == True:
+				if mouseButtons[0] == True:
+					self.draw((1, 1))
+					return True
+				else:
+					self.draw((1, 1))
+			else:
+				self.draw((2, 2))
+			return False
 
 	def draw(self, hover):
 		pygame.draw.rect(gameDisplay, (0, 0, 0), (self.X, self.Y, self.W, self.H), 10)
@@ -831,13 +840,21 @@ def battleScreen():
 	gameDisplay.blit(F.placeHolders[1], (50, 250))
 	gameDisplay.blit(F.placeHolders[2], (585, 250))
 	for i in slotButtons:
-		if slotButtons[i].run() == True:
-			F.mode = i
+		if F.mode == i:
+			if slotButtons[i].run(True) == True:
+				F.mode = "nothing"
+		else:
+			if slotButtons[i].run(False) == True:
+				F.mode = i
+
 
 	if F.mode == "cannon":
 		if mouseButtons[0] == True:
-			xvol = displayWidth * 0.2 - mousePos[0]
-			yvol = displayHeight * 0.6 - mousePos[1]
+			x = displayWidth * 0.2 - mousePos[0]
+			y = displayHeight * 0.6 - mousePos[1]
+			angle = -math.atan2 (y, x) + math.pi/2
+			xvol = math.sin(angle) * 65
+			yvol = math.cos(angle) *65
 			pygame.draw.line(
 				gameDisplay,
 				(100, 100, 100),
@@ -846,11 +863,12 @@ def battleScreen():
 			)
 			F.pressed = True
 		elif F.pressed == True:
-			xvol = displayWidth * 0.2 - mousePos[0]
-			yvol = displayHeight * 0.6 - mousePos[1]
-			F.projectiles.append(
-				cannonBall(displayWidth * 0.2, displayHeight * 0.6, xvol, yvol)
-			)
+			x = displayWidth * 0.2 - mousePos[0]
+			y = displayHeight * 0.6 - mousePos[1]
+			angle = -math.atan2 (y, x) + math.pi/2
+			xvol = math.sin(angle) * 65
+			yvol = math.cos(angle) * 65
+			F.projectiles.append(cannonBall(displayWidth * 0.2, displayHeight * 0.6, xvol, yvol))
 			shakeController([random.random()*4-2, random.random()*4-2], 0.5)
 			F.pressed = False
 
