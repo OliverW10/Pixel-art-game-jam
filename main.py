@@ -11,7 +11,7 @@ displayWidth, displayHeight = 800, 600
 pygame.init()
 screenDisplay = pygame.display.set_mode((displayWidth, displayHeight))
 gameDisplay = pygame.Surface((displayWidth, displayHeight))
-pygame.display.set_caption("aiden hasnt done anything")
+pygame.display.set_caption("penis face")
 clock = pygame.time.Clock()
 loadImage = pygame.image.load
 
@@ -55,9 +55,9 @@ MAP["PlayerCargo"] = {
 	"Gold": 100,
 }  # Inventory
 MAP["Stats"] = {
-	"speed": [3, 5, 7, 10],
-	"armor": [1.3, 1.15, 1, 0.8],
-	"HP": [50, 60, 75, 100, 150, 250, 350, 500],
+	"speed": [1.5, 2.5, 3.5, 5, 25],
+	"armor": [1.3, 1.15, 1, 0.8, 0.1],
+	"HP": [50, 60, 75, 100, 150, 250, 350, 500, 2000],
 }
 MAP["PlayerLevels"] = {"speed": 0, "armor": 0, "HP": 0}
 MAP["PlayerStats"] = {
@@ -66,9 +66,9 @@ MAP["PlayerStats"] = {
 	"HP": MAP["Stats"]["HP"][MAP["PlayerLevels"]["HP"]],
 }
 SHOP["UpgradeCosts"] = {
-	"speed": [100, 500, 1200, 3000],
-	"armor": [200, 1000, 2000, 6000],
-	"HP": [50, 100, 200, 500, 1000, 1500, 2000],
+	"speed": [100, 500, 1200, 9999, "max"],
+	"armor": [200, 1000, 2000, 9999, "max"],
+	"HP": [50, 100, 200, 500, 1000, 1500, 9999, "max"],
 }
 #                          total 6800                             total 9200                        total 5350
 MAP["ShipDrawPos"] = [displayWidth / 2, displayHeight / 2]
@@ -87,13 +87,12 @@ PREP.EnemyCargo = {}
 
 shakePos = [0,0]
 shakeVol = [random.random()*4-2, random.random()*4-2]
-print(shakeVol)
 # WaterReflections
 if MAP["SparkleType"] == 0:
 	for p in range(10):
 		MAP["WaterReflections"].append(pygame.Surface((displayWidth, displayHeight)))
 		MAP["WaterReflections"][-1].fill((0, 0, 200))
-		for i in range(2000):
+		for i in range(1000):
 			x = (random.random() + random.random()) / 2
 			x -= 0.5
 
@@ -114,18 +113,34 @@ if MAP["SparkleType"] == 0:
 islands = {}
 
 islandTypes = islandData.data[:]
-for i in range(random.randint(6, 10)):
-	currentType = islandTypes[random.randint(0, len(islandTypes) - 1)]
-	islandX, islandY = (
-		random.randint(0, MAP["AreaSize"][0] / 25) * 25,
-		random.randint(0, MAP["AreaSize"][1] / 25) * 25,
-	)
-	for block in currentType:
-		x = int(block.split(",")[0])
-		y = int(block.split(",")[1])
-		newBlock = str(x + islandX) + "," + str(y + islandY)
-		MAP["LandBlocks"][newBlock] = currentType[block]
+def generateIslands():
+	global islands
+	global MAP
+	done = False
+	for i in range(random.randint(6, 10)):
+		currentType = islandTypes[random.randint(0, len(islandTypes) - 1)]
+		islandX, islandY = (
+			random.randint(0, MAP["AreaSize"][0] / 25 - 32) * 25 ,
+			random.randint(0, MAP["AreaSize"][1] / 25 - 19) * 25,
+		)
+		for block in currentType:
+			x = int(block.split(",")[0])
+			y = int(block.split(",")[1])
+			blockRect = pygame.Rect(x + islandX, y + islandX, 25, 25)
+			if blockRect.collidepoint(MAP["PlayerPos"]):
+				islands = {}
+				MAP["LandBlocks"] = {}
+				generateIslands()
+				done = True
+				break
+			if done == True:
+				break
+			newBlock = str(x + islandX) + "," + str(y + islandY)
+			MAP["LandBlocks"][newBlock] = currentType[block]
+		if done == True:
+			break
 
+generateIslands()
 MAP["CollisionsList"] = []
 for pos in MAP["LandBlocks"]:
 	x = int(pos.split(",")[0])
@@ -211,8 +226,6 @@ SHOP["BuyBoard"] = pygame.transform.scale(
 SHOP["shopXbutton"] = loadImage("mapAssets/shopXbutton.png")
 SHOP["shopXbutton"] = pygame.transform.scale(SHOP["shopXbutton"], (60, 84))
 
-PREP["Gun"] = loadImage("fightAssets/items/pistol.png")
-PREP["CannonBall"] = loadImage("fightAssets/items/cannonBall.png")
 PREP["Paper"] = loadImage("mapAssets/paper.png")
 PREP["Paper"] = pygame.transform.scale(MAP["Paper"], (displayWidth, displayHeight))
 PREP["FightButtonRect"] = pygame.Rect(
@@ -290,14 +303,16 @@ class text:
 
 	def changeMessage(self, newMessage, colour):
 		self.messsage = newMessage
+		self.surf = pygame.Surface((self.rect.x, self.rect.y))
 		self.surf, self.rect = text_objects(self.message, self.font, colour)
 		self.rect.center = (self.X, self.Y)
 
 	def draw(self):
 		gameDisplay.blit(self.surf, self.rect)
 
-		# def move(self, X, Y):
-		# 	self.rect.center = (X, Y)
+	def XYdraw(self, X, Y):
+		self.rect.center = (X, Y)
+		gameDisplay.blit(self.surf, self.rect)
 
 
 class sailor:
@@ -420,6 +435,10 @@ class wave:
 			(self.X - MAP["ScreenPos"][0], self.Y - MAP["ScreenPos"][1]),
 		)
 
+def dist(point1, point2):
+	X = abs(point1[0] - point2[0])
+	Y = abs(point1[1] - point2[1])
+	return math.sqrt(X ** 2 + Y ** 2)
 
 class PirateShip:
 	def __init__(
@@ -427,10 +446,10 @@ class PirateShip:
 	):  # Power 5-10 very small,  10-20 small, 20-35 med 35-50 large, boss is 60
 		self.X = X
 		self.Y = Y
-		self.goingTo = [
-			random.randint(0, MAP["AreaSize"][0]),
-			random.randint(0, MAP["AreaSize"][1]),
-		]
+		while testCollision((self.X, self.Y), True) == True:
+			self.X += 25
+		self.goingTo = []
+		self.findRoute()
 		self.speed = (power + 75) / 7
 		self.state = "wander"  # Can also be attack and retreat
 		self.dir = 0
@@ -450,26 +469,45 @@ class PirateShip:
 		if power == 60:
 			self.type = "boss"
 
+	def findRoute(self):
+		self.goingTo = [random.randint(0, MAP["AreaSize"][0]), random.randint(0, MAP["AreaSize"][1])]
+		while True:
+			self.goingTo = [random.randint(0, MAP["AreaSize"][0]), random.randint(0, MAP["AreaSize"][1])] #can make a addition to self.pos to increase chance of found path
+			if self.checkPath(self.goingTo) == True:
+				break
+
+	def checkPath(self, going):
+		x, y = self.X, self.Y
+		while dist((x, y), going) > 50:
+			if x > going[0]:
+				x -= 12
+			if x < going[0]:
+				x += 12
+			if y > going[1]:
+				y -= 12
+			if y < going[1]:
+				y += 12
+			if testCollision((x, y), True):
+				return False
+		return True
+
 	def AI(self):
 		if dist((self.X, self.Y), (self.goingTo[0], self.goingTo[1])) < 50:
 			if self.state == "wander":
-				self.goingTo = [
-					random.randint(0, MAP["AreaSize"][0]),
-					random.randint(0, MAP["AreaSize"][1]),
-				]
+				self.findRoute()
 		else:
 			if self.X > self.goingTo[0]:
 				self.X -= frameTime * self.speed
-				self.dir = 3
+				#self.dir = 3
 			if self.X < self.goingTo[0]:
 				self.X += frameTime * self.speed
-				self.dir = 1
+				#self.dir = 1
 			if self.Y > self.goingTo[1]:
 				self.Y -= frameTime * self.speed
-				self.dir = 0
+				#self.dir = 0
 			if self.Y < self.goingTo[1]:
 				self.Y += frameTime * self.speed
-				self.dir = 2
+				#self.dir = 2
 			distX = self.goingTo[0] - self.X
 			distY = self.goingTo[1] - self.Y
 			if abs(distX) > abs(distY):
@@ -508,16 +546,6 @@ class PirateShip:
 			gameDisplay.blit(
 				MAP["pirateShipsSprites"][self.type][self.dir], (self.drawX, self.drawY)
 			)
-
-
-for i in range(10):
-	MAP["PirateShips"].append(
-		PirateShip(
-			random.randint(0, MAP["AreaSize"][0]),
-			random.randint(0, MAP["AreaSize"][1]),
-			random.randint(5, 19),
-		)
-	)
 
 # MAP["Text"]["Gold"] = text("Gold: "+str(MAP["Stat"]))
 
@@ -585,21 +613,21 @@ def map():
 		(MAP["AreaSize"][0] - MAP["ScreenPos"][0], 0 - MAP["ScreenPos"][1]),
 		(0 - MAP["ScreenPos"][0], MAP["AreaSize"][1] - MAP["ScreenPos"][1]),
 	)
-	if abs(sum(MAP["PlayerSpeed"])) < 4:
+	if abs(sum(MAP["PlayerSpeed"])) < MAP["Stats"]["speed"][MAP["PlayerLevels"]["speed"]]*2:
 		if Keys["W"] == True:
-			MAP["PlayerSpeed"][1] -= frameTime * 2
+			MAP["PlayerSpeed"][1] -= frameTime * MAP["Stats"]["speed"][MAP["PlayerLevels"]["speed"]]
 			MAP["PlayerDir"] = 2
 
 		if Keys["A"] == True:
-			MAP["PlayerSpeed"][0] -= frameTime * 2
+			MAP["PlayerSpeed"][0] -= frameTime * MAP["Stats"]["speed"][MAP["PlayerLevels"]["speed"]]
 			MAP["PlayerDir"] = 0
 
 		if Keys["S"] == True:
-			MAP["PlayerSpeed"][1] += frameTime * 2
+			MAP["PlayerSpeed"][1] += frameTime * MAP["Stats"]["speed"][MAP["PlayerLevels"]["speed"]]
 			MAP["PlayerDir"] = 6
 
 		if Keys["D"] == True:
-			MAP["PlayerSpeed"][0] += frameTime * 2
+			MAP["PlayerSpeed"][0] += frameTime * MAP["Stats"]["speed"][MAP["PlayerLevels"]["speed"]]
 			MAP["PlayerDir"] = 4
 
 		if Keys["W"] == True and Keys["D"] == True:
@@ -621,8 +649,8 @@ def map():
 
 	# Collisions
 	if (
-		testCollision(MAP["PlayerPos"]) == True
-		or testCollision((MAP["PlayerPos"][0] + 5, MAP["PlayerPos"][1])) == True
+		testCollision(MAP["PlayerPos"], False) == True
+		or testCollision((MAP["PlayerPos"][0] + 5, MAP["PlayerPos"][1]), False) == True
 	):
 		MAP["PlayerSpeed"][0] = -MAP["PlayerSpeed"][0] * 1
 		MAP["PlayerPos"][0] += MAP["PlayerSpeed"][0] * frameTime * 30
@@ -630,8 +658,8 @@ def map():
 	MAP["PlayerPos"][1] += MAP["PlayerSpeed"][1] * frameTime * 30
 
 	if (
-		testCollision(MAP["PlayerPos"]) == True
-		or testCollision((MAP["PlayerPos"][0], MAP["PlayerPos"][1] + 5)) == True
+		testCollision(MAP["PlayerPos"], False) == True
+		or testCollision((MAP["PlayerPos"][0], MAP["PlayerPos"][1] + 5), False) == True
 	):
 		MAP["PlayerSpeed"][1] = -MAP["PlayerSpeed"][1] * 1
 		MAP["PlayerPos"][1] += MAP["PlayerSpeed"][1] * frameTime * 30
@@ -750,68 +778,144 @@ def optionsPage():
 	###################################
 
 
-def drawCannonball(X, Y, size=10):
-	pygame.draw.circle(gameDisplay, (0, 0, 0), (int(X), int(Y)), size)
-
-
-class cannonBall:
-	def __init__(self, X, Y, Xvol, Yvol):
+class shard:
+	def __init__(self, X, Y):
 		self.X, self.Y = X, Y
-		self.Xvol, self.Yvol = Xvol, Yvol
+		angle = (random.random()-0.5)*math.pi*2
+		self.Xvol = math.sin(angle) * random.randint(5, 40)
+		self.Yvol = math.cos(angle) * random.randint(5, 40)
+		self.destory = False
 
 	def run(self):
 		self.X += self.Xvol * frameTime * 20
 		self.Y += self.Yvol * frameTime * 20
 		self.Yvol += frameTime * 30
+		self.Xvol -= self.Xvol * frameTime * 0.5
+		self.Yvol -= self.Yvol * frameTime * 0.5
+		if self.X > displayWidth or self.X < 0 or self.Y > displayHeight or self.Y < 0:
+			self.destory = True
 		self.draw()
 
 	def draw(self):
-		drawCannonball(self.X, self.Y)
+		pygame.draw.circle(gameDisplay, (100,50,0), (int(self.X), int(self.Y)), 3)
+
+class cannonBall:
+	def __init__(self, X, Y, Xvol, Yvol):
+		self.X, self.Y = X, Y
+		self.Xvol, self.Yvol = Xvol, Yvol
+		self.explode = False
+		self.destory = False
+
+	def run(self):
+		self.X += self.Xvol * frameTime * 20
+		self.Y += self.Yvol * frameTime * 20
+		self.Yvol += frameTime * 30
+		pygame.draw.rect(gameDisplay, (0,0,0), (600, 400, 100, 500), 3)
+		if self.explode == True:
+			global F
+			for i in range(20):
+				F.projectiles.append(shard(self.X, self.Y))
+			self.destory = True
+		if self.checkCollide([pygame.Rect(600, 400, 100, 500)]):
+			shakeController([random.random()*5-2.5, random.random()*5-2.5], 0.3)
+			self.explode = True
+			self.Xvol = 0
+			self.Yvol = 0
+
+		if  self.X > displayWidth or self.X < 0 or self.Y > displayHeight:
+			self.destory = True
+		self.draw()
+
+
+	def checkCollide(self, rectList):
+		hit = False
+		for i in range(len(rectList)):
+			if rectList[i].collidepoint((self.X, self.Y)) == True:
+				hit = True
+		return hit
+
+	def draw(self):
+		if self.destory == False:
+			if self.explode == False:
+				F["drawImages"]["cannonball"].draw(self.X, self.Y)
+			else:
+				pygame.draw.circle(gameDisplay, (255,0,0), (int(self. X), int(self.Y)), 50)
 
 
 class button:
-	def __init__(self, X, Y, W, H, draw):  # draw should be a list of functions that take X, Y to be drawn on the button
+	def __init__(self, X, Y, W, H, draw, shadowColour, buttonColour):  # draw should be a list of functions that take X, Y to be drawn on the button
 		self.X = X
 		self.Y = Y
 		self.W = W
 		self.H = H
 		self.rect = pygame.Rect(X, Y, W, H)
 		self.drawList = draw
+		self.pressed = False
+		self.released = False
+		self.colours = [shadowColour, buttonColour]
 
 	def run(self, down):
-		if down == True:
-			if self.rect.collidepoint(mousePos) == True:
-				if mouseButtons[0] == True:
-					self.draw((1, 1))
-					return True
-				else:
-					self.draw((3, 3))
+		if self.released == True:
+			self.released = False
+			self.pressed = False
+
+		if self.rect.collidepoint(mousePos) == True:
+			if mouseButtons[0] == True:
+				self.draw((1, 1))
+				self.pressed = True
+			else:
+				if self.pressed == True:
+					self.released = True
+				self.draw((4, 4))
+		else:
+			self.pressed = False
+			self.released = False
+			if down == True:
+				self.draw((3, 3))
 			else:
 				self.draw((5, 5))
-			return False
-		else:
-			if self.rect.collidepoint(mousePos) == True:
-				if mouseButtons[0] == True:
-					self.draw((1, 1))
-					return True
-				else:
-					self.draw((1, 1))
-			else:
-				self.draw((2, 2))
-			return False
+		return self.released
 
 	def draw(self, hover):
-		pygame.draw.rect(gameDisplay, (0, 0, 0), (self.X, self.Y, self.W, self.H), 10)
+		pygame.draw.rect(gameDisplay, self.colours[0], (self.X, self.Y, self.W, self.H), 10)
 		pygame.draw.rect(
 			gameDisplay,
-			(255, 255, 255),
+			self.colours[1],
 			(self.X + hover[0], self.Y + hover[1], self.W, self.H),
 		)
 		for i in range(len(self.drawList)):
 			self.drawList[i](
 				self.X + self.W / 2 + hover[0], self.Y + self.H / 2 + hover[1]
 			)
+	def changeDraw(self, drawList):
+		self.drawList = drawList
 
+
+def destroyProjectiles():
+	for i in range(len(F.projectiles)):
+		if F.projectiles[i].destory == True:
+			del F.projectiles[i]
+			destroyProjectiles()
+			break
+
+F["images"] = {"cannonball" : loadImage("fightAssets/cannon_ball.png"),
+"bullets" : loadImage("fightAssets/bullets.png"),
+"nuclearBomb" : loadImage("fightAssets/nuclear_bomb.png"),
+"net" : loadImage("fightAssets/net.png")}
+
+class drawImage:
+	def __init__(self, img):
+		self.img = img
+	def draw(self, X, Y):
+		screenDisplay.blit(self.img, (X, Y))
+
+F["drawImages"] = {"cannonball" : drawImage(F["images"]["cannonball"]),
+"bullets" : drawImage(F["images"]["bullets"]),
+"nuclearBomb" : drawImage(F["images"]["nuclearBomb"]),
+"net" : drawImage(F["images"]["net"])}
+
+for item in list(F["images"].keys()):
+	F["images"][item] = pygame.transform.scale(F["images"][item], (round(displayWidth*0.06), int(displayWidth*0.06)))
 
 slotButtons = {
 	"cannon": button(
@@ -819,8 +923,13 @@ slotButtons = {
 		displayHeight * 0.9,
 		displayWidth * 0.07,
 		displayWidth * 0.07,
-		[drawCannonball],
-	)
+		[F["drawImages"]["cannonball"].draw],
+		(0,0,0),
+		(250, 250, 250)
+	),
+	"swivel": button(displayWidth*0.17, displayHeight*0.9, displayWidth*0.07, displayWidth*0.07, [F["drawImages"]["bullets"].draw], (0,0,0), (255,255,255)),
+	"nuclearBomb": button(displayWidth*0.17, displayHeight*0.9, displayWidth*0.07, displayWidth*0.07, [F["drawImages"]["nuclearBomb"].draw], (0,0,0), (255,255,255)),
+	"net": button(displayWidth*0.17, displayHeight*0.9, displayWidth*0.07, displayWidth*0.07, [F["drawImages"]["net"].draw], (0,0,0), (255,255,255))
 }
 
 F.placeHolders = [
@@ -839,14 +948,6 @@ def battleScreen():
 	gameDisplay.blit(F.placeHolders[0], (0, 0))
 	gameDisplay.blit(F.placeHolders[1], (50, 250))
 	gameDisplay.blit(F.placeHolders[2], (585, 250))
-	for i in slotButtons:
-		if F.mode == i:
-			if slotButtons[i].run(True) == True:
-				F.mode = "nothing"
-		else:
-			if slotButtons[i].run(False) == True:
-				F.mode = i
-
 
 	if F.mode == "cannon":
 		if mouseButtons[0] == True:
@@ -866,45 +967,52 @@ def battleScreen():
 			x = displayWidth * 0.2 - mousePos[0]
 			y = displayHeight * 0.6 - mousePos[1]
 			angle = -math.atan2 (y, x) + math.pi/2
-			xvol = math.sin(angle) * 65
-			yvol = math.cos(angle) * 65
+			xvol = math.sin(angle) * 55
+			yvol = math.cos(angle) * 55
 			F.projectiles.append(cannonBall(displayWidth * 0.2, displayHeight * 0.6, xvol, yvol))
-			shakeController([random.random()*4-2, random.random()*4-2], 0.5)
+			shakeController([random.random()*2-1, random.random()*2-1], 0.2)
 			F.pressed = False
+
+	for i in slotButtons:
+		if F.mode == i:
+			if slotButtons[i].run(True) == True:
+				F.mode = "nothing"
+		else:
+			if slotButtons[i].run(False) == True:
+				F.mode = i
 
 	for i in range(len(F.projectiles)):
 		F.projectiles[i].run()
+	destroyProjectiles()
 
 
 def cutScene():  # Need to make
 	global gameState
-	gameState = "Menu"
+	gameState = "Map"
 
+SHOP["Text"]["Speed"] = {}
+for i in range(len(SHOP["UpgradeCosts"]["speed"])):
+	SHOP["Text"]["Speed"][i] = text("Speed: " + str(SHOP["UpgradeCosts"]["speed"][i]), displayWidth * 0.3, displayHeight * 0.4, 25, (10, 10, 10))
 
-SHOP["Text"]["Speed"] = text(
-	"Speed: " + str(SHOP["UpgradeCosts"]["speed"][MAP["PlayerLevels"]["speed"]]),
-	displayWidth * 0.3,
-	displayHeight * 0.4,
-	30,
-	(10, 10, 10),
-)
-SHOP["Text"]["Armor"] = text(
-	"Armor: " + str(SHOP["UpgradeCosts"]["armor"][MAP["PlayerLevels"]["armor"]]),
-	displayWidth * 0.3,
-	displayHeight * 0.5,
-	30,
-	(10, 10, 10),
-)
-SHOP["Text"]["HP"] = text(
-	"HP: " + str(SHOP["UpgradeCosts"]["HP"][MAP["PlayerLevels"]["HP"]]),
-	displayWidth * 0.3,
-	displayHeight * 0.6,
-	30,
-	(10, 10, 10),
-)
+SHOP["Text"]["Armor"]= {}
+for i in range(len(SHOP["UpgradeCosts"]["armor"])):
+	SHOP["Text"]["Armor"][i] = text("Armor: " + str(SHOP["UpgradeCosts"]["armor"][i]), displayWidth * 0.3, displayHeight * 0.4, 25, (10, 10, 10))
 
+SHOP["Text"]["HP"] = {}
+for i in range(len(SHOP["UpgradeCosts"]["HP"])):
+	SHOP["Text"]["HP"][i] = text("HP: " + str(SHOP["UpgradeCosts"]["HP"][i]), displayWidth * 0.3, displayHeight * 0.4, 29, (10, 10, 10))
 
-def shop():
+SHOP["Text"]["Upgrades"] = text("Upgrades", displayWidth * 0.2, displayHeight* 0.3, 35, (20, 20, 0))
+SHOP["Text"]["Shop"] = text("Shop", displayWidth * 0.5, displayHeight* 0.26, 40, (20, 20, 0))
+SHOP["Text"]["Items"] = text("Items", displayWidth * 0.75, displayHeight* 0.3, 35, (20, 20, 0))
+SHOP["Text"]["Crew"] = text("Crew", displayWidth * 0.5, displayHeight* 0.6, 35, (20, 20, 0))
+
+SHOP["Buttons"] = {}
+SHOP["Buttons"]["Speed"] = button(displayHeight*0.1, displayWidth*0.3, 200, 40, [SHOP["Text"]["Speed"][MAP["PlayerLevels"]["speed"]].XYdraw], (20, 20, 0), (100, 75, 50))
+SHOP["Buttons"]["Armor"] = button(displayHeight*0.1, displayWidth*0.375, 200, 40, [SHOP["Text"]["Armor"][MAP["PlayerLevels"]["armor"]].XYdraw], (20, 20, 0), (100, 75, 50))
+SHOP["Buttons"]["HP"] = button(displayHeight*0.1, displayWidth*0.45, 150, 40, [SHOP["Text"]["HP"][MAP["PlayerLevels"]["HP"]].XYdraw], (20, 20, 0), (100, 75, 50))
+
+def shop(): 
 	gameDisplay.blit(MAP["BuyBoard"], (0, 0))
 	hover = (5, 5)
 	if (
@@ -923,22 +1031,21 @@ def shop():
 		(displayWidth * 0.05 + hover[0], 24 + hover[1], 60, 60),
 	)
 	gameDisplay.blit(SHOP["shopXbutton"], (displayWidth * 0.05, 0))
-	SHOP["Text"]["Speed"].changeMessage(
-		"Speed: " + str(SHOP["UpgradeCosts"]["speed"][MAP["PlayerLevels"]["speed"]]),
-		(10, 10, 10),
-	)
-	SHOP["Text"]["Armor"].changeMessage(
-		"Speed: " + str(SHOP["UpgradeCosts"]["armor"][MAP["PlayerLevels"]["armor"]]),
-		(10, 10, 10),
-	)
-	SHOP["Text"]["HP"].changeMessage(
-		"Speed: " + str(SHOP["UpgradeCosts"]["HP"][MAP["PlayerLevels"]["HP"]]),
-		(10, 10, 10),
-	)
-	SHOP["Text"]["Speed"].draw()
-	SHOP["Text"]["Armor"].draw()
-	SHOP["Text"]["HP"].draw()
 
+	SHOP["Text"]["Upgrades"].draw()
+	SHOP["Text"]["Shop"].draw()
+	SHOP["Text"]["Items"].draw()
+	SHOP["Text"]["Crew"].draw()
+
+	if SHOP["Buttons"]["Speed"].run(False) == True and MAP["PlayerLevels"]["speed"] < len(MAP["UpgradeCosts"]["speed"])-1:
+		MAP["PlayerLevels"]["speed"] += 1
+		SHOP["Buttons"]["Speed"].changeDraw([SHOP["Text"]["Speed"][MAP["PlayerLevels"]["speed"]].XYdraw])
+	if SHOP["Buttons"]["Armor"].run(False) == True and MAP["PlayerLevels"]["armor"] < len(MAP["UpgradeCosts"]["armor"])-1:
+		MAP["PlayerLevels"]["armor"] += 1
+		SHOP["Buttons"]["Armor"].changeDraw([SHOP["Text"]["Armor"][MAP["PlayerLevels"]["armor"]].XYdraw])
+	if SHOP["Buttons"]["HP"].run(False) == True and MAP["PlayerLevels"]["HP"] < len(MAP["UpgradeCosts"]["HP"])-1:
+		MAP["PlayerLevels"]["HP"] += 1
+		SHOP["Buttons"]["HP"].changeDraw([SHOP["Text"]["HP"][MAP["PlayerLevels"]["HP"]].XYdraw])
 
 ### Other funtions ###
 def waveDeleter():
@@ -1074,22 +1181,22 @@ def prepMenu(playerCargo, enemyCargo):
 		playerCargo["sailors"][i].draw(None, None)
 
 
-def dist(point1, point2):
-	X = abs(point1[0] - point2[0])
-	Y = abs(point1[1] - point2[1])
-	return math.sqrt(X ** 2 + Y ** 2)
-
-
-def testCollision(point):
+def testCollision(point, pirate):
 	collide = islandArray[int(point[0] / 25)][int(point[1] / 25)]
-	if collide == 4:
-		global gameState
-		gameState = "shop"
-		return "port"
-	elif collide != 0:
-		return True
+	if pirate == False:
+		if collide == 4:
+				global gameState
+				gameState = "shop"
+				return "port"
+		elif collide != 0:
+			return True
+		else:
+			return False
 	else:
-		return False
+		if collide == 0 :
+			return False
+		else:
+			return True
 
 
 def QUIT():
@@ -1129,7 +1236,14 @@ def shakeController(shake, timer):
 	if round(shakeVol[0]*5) == 0 and round(shakeVol[1]*5) == 0:
 		shakeVol = [0,0]
 
-
+for i in range(12): #Creaing pirate ships in the map
+	MAP["PirateShips"].append(
+		PirateShip(
+			random.randint(0, MAP["AreaSize"][0]),
+			random.randint(0, MAP["AreaSize"][1]),
+			random.randint(5, 19),
+		)
+	)
 
 # Main Loop
 while True:
