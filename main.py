@@ -114,34 +114,99 @@ islands = {}
 
 islandTypes = islandData.data[:]
 
-
 def generateIslands():
     global islands
     global MAP
+    islandPoints = []
     done = False
-    for i in range(random.randint(6, 10)):
-        currentType = islandTypes[random.randint(0, len(islandTypes) - 1)]
-        islandX, islandY = (
-            random.randint(0, MAP["AreaSize"][0] / 25 - 32) * 25,
-            random.randint(0, MAP["AreaSize"][1] / 25 - 19) * 25,
-        )
-        for block in currentType:
-            x = int(block.split(",")[0])
-            y = int(block.split(",")[1])
-            blockRect = pygame.Rect(x + islandX, y + islandX, 25, 25)
-            if blockRect.collidepoint(MAP["PlayerPos"]):
-                islands = {}
-                MAP["LandBlocks"] = {}
-                generateIslands()
-                done = True
-                break
-            if done == True:
-                break
-            newBlock = str(x + islandX) + "," + str(y + islandY)
-            MAP["LandBlocks"][newBlock] = currentType[block]
-        if done == True:
-            break
+    #create bases
+    for i in range(7):
+        x = (random.randint(0, round(MAP["AreaSize"][0]/25))) * 25
+        y = (random.randint(0, round(MAP["AreaSize"][1]/25))) * 25
+        x -= 800
+        y -= 600
+        islandBase = random.choice(islandTypes)
+        for i in islandBase: #goes through every block in the base
+            blockX = int(i.split(",")[0])
+            blockY = int(i.split(",")[1])
+            MAP["LandBlocks"][str(x+blockX)+","+str(y+blockY)] = 2
 
+    #add sand to bases
+    endNum = 700
+    i = 0
+    while i < endNum:
+        start = random.choice(list(MAP["LandBlocks"].keys()))
+        x = start.split(",")[0]
+        y = start.split(",")[1]
+        side = random.randint(0, 3)
+        if side == 0:
+            if x+","+str(int(y)+25) in MAP["LandBlocks"].keys():
+                endNum += 1
+            else:
+                MAP["LandBlocks"][x+","+str(int(y)+25)] = 1
+        if side == 1:
+            if x+","+str(int(y)-25) in MAP["LandBlocks"].keys():
+                endNum += 1
+            else:
+                MAP["LandBlocks"][x+","+str(int(y)-25)] = 1
+        if side == 2:
+            if str(int(x)+25)+","+y in MAP["LandBlocks"].keys():
+                endNum += 1
+            else:
+                MAP["LandBlocks"][str(int(x)+25)+","+y] = 1
+        if side == 3:
+            if str(int(x)-25)+","+y in MAP["LandBlocks"].keys():
+                endNum += 1
+            else:
+                MAP["LandBlocks"][str(int(x)-25)+","+y] = 1
+        i +=1
+
+    #add sand to bases
+    endNum = 10
+    i = 0
+    while i < endNum:
+        start = random.choice(list(MAP["LandBlocks"].keys()))
+        x = start.split(",")[0]
+        y = start.split(",")[1]
+        side = random.randint(0, 3)
+        if side == 0:
+            if x+","+str(int(y)+25) in MAP["LandBlocks"].keys():
+                endNum += 1
+            else:
+                MAP["LandBlocks"][x+","+str(int(y)+25)] = 4
+        if side == 1:
+            if x+","+str(int(y)-25) in MAP["LandBlocks"].keys():
+                endNum += 1
+            else:
+                MAP["LandBlocks"][x+","+str(int(y)-25)] = 4
+        if side == 2:
+            if str(int(x)+25)+","+y in MAP["LandBlocks"].keys():
+                endNum += 1
+            else:
+                MAP["LandBlocks"][str(int(x)+25)+","+y] = 4
+        if side == 3:
+            if str(int(x)-25)+","+y in MAP["LandBlocks"].keys():
+                endNum += 1
+            else:
+                MAP["LandBlocks"][str(int(x)-25)+","+y] = 4
+        i +=1
+
+def testCollision(point, pirate):
+    collide = islandArray[int(point[0] / 25)][int(point[1] / 25)]
+    if pirate == False:
+        if collide == 4:
+            global gameState
+            gameState = "shop"
+            return "port"
+        elif collide != 0:
+            return True
+        else:
+            return False
+    else:
+        if collide == 0:
+            return False
+        else:
+            return True
 
 generateIslands()
 MAP["CollisionsList"] = []
@@ -167,6 +232,10 @@ for pos in MAP["LandBlocks"]:
     x = round(x)
     y = round(y)
     islandArray[x][y] = MAP["LandBlocks"][pos]
+
+while testCollision(MAP["PlayerPos"], False) == True:
+    MAP["PlayerPos"][0]+=25
+
 
 
 # Loading Sprites/images
@@ -672,18 +741,14 @@ def map():
 
     # Collisions
     if (
-        testCollision(MAP["PlayerPos"], False) == True
-        or testCollision((MAP["PlayerPos"][0] + 5, MAP["PlayerPos"][1]), False) == True
-    ):
+        testCollision(MAP["PlayerPos"], False) == True):
         MAP["PlayerSpeed"][0] = -MAP["PlayerSpeed"][0] * 1
         MAP["PlayerPos"][0] += MAP["PlayerSpeed"][0] * frameTime * 30
 
     MAP["PlayerPos"][1] += MAP["PlayerSpeed"][1] * frameTime * 30
 
     if (
-        testCollision(MAP["PlayerPos"], False) == True
-        or testCollision((MAP["PlayerPos"][0], MAP["PlayerPos"][1] + 5), False) == True
-    ):
+        testCollision(MAP["PlayerPos"], False) == True):
         MAP["PlayerSpeed"][1] = -MAP["PlayerSpeed"][1] * 1
         MAP["PlayerPos"][1] += MAP["PlayerSpeed"][1] * frameTime * 30
 
@@ -941,8 +1006,12 @@ class drawImage:
     def __init__(self, img):
         self.img = img
 
+    def resize(self, W, H):
+        self.img = pygame.transform.scale(self.img, (W, H))
+
     def draw(self, X, Y):
-        screenDisplay.blit(self.img, (X, Y))
+        rect = self.img.get_rect()
+        gameDisplay.blit(self.img, (X - rect.w / 2, Y - rect.h / 2))
 
 
 F["drawImages"] = {
@@ -952,6 +1021,10 @@ F["drawImages"] = {
     "net": drawImage(F["images"]["net"]),
 }
 
+F["drawImages"]["cannonball"].resize(32, 32)
+F["drawImages"]["net"].resize(32, 32)
+F["drawImages"]["bullets"].resize(32, 32)
+F["drawImages"]["nuclearBomb"].resize(32, 32)
 for item in list(F["images"].keys()):
     F["images"][item] = pygame.transform.scale(
         F["images"][item], (round(displayWidth * 0.06), int(displayWidth * 0.06))
@@ -1313,24 +1386,6 @@ def prepMenu(playerCargo, enemyCargo):
             dropRects
         )  # give a list of rects that you can drop at
         playerCargo["sailors"][i].draw(None, None)
-
-
-def testCollision(point, pirate):
-    collide = islandArray[int(point[0] / 25)][int(point[1] / 25)]
-    if pirate == False:
-        if collide == 4:
-            global gameState
-            gameState = "shop"
-            return "port"
-        elif collide != 0:
-            return True
-        else:
-            return False
-    else:
-        if collide == 0:
-            return False
-        else:
-            return True
 
 
 def QUIT():
