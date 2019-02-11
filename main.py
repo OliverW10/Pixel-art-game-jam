@@ -114,24 +114,23 @@ islands = {}
 
 islandTypes = islandData.data[:]
 
+
 def generateIslands():
     global islands
     global MAP
     islandPoints = []
     done = False
-    #create bases
+    # create bases
     for i in range(7):
-        x = (random.randint(0, round(MAP["AreaSize"][0]/25))) * 25
-        y = (random.randint(0, round(MAP["AreaSize"][1]/25))) * 25
-        x -= 800
-        y -= 600
+        x = (random.randint(0, round((MAP["AreaSize"][0] - 800) / 25))) * 25
+        y = (random.randint(0, round((MAP["AreaSize"][1] - 600) / 25))) * 25
         islandBase = random.choice(islandTypes)
-        for i in islandBase: #goes through every block in the base
+        for i in islandBase:  # goes through every block in the base
             blockX = int(i.split(",")[0])
             blockY = int(i.split(",")[1])
-            MAP["LandBlocks"][str(x+blockX)+","+str(y+blockY)] = 2
+            MAP["LandBlocks"][str(x + blockX) + "," + str(y + blockY)] = 2
 
-    #add sand to bases
+    # add sand to bases
     endNum = 700
     i = 0
     while i < endNum:
@@ -140,28 +139,28 @@ def generateIslands():
         y = start.split(",")[1]
         side = random.randint(0, 3)
         if side == 0:
-            if x+","+str(int(y)+25) in MAP["LandBlocks"].keys():
+            if x + "," + str(int(y) + 25) in MAP["LandBlocks"].keys():
                 endNum += 1
             else:
-                MAP["LandBlocks"][x+","+str(int(y)+25)] = 1
+                MAP["LandBlocks"][x + "," + str(int(y) + 25)] = 1
         if side == 1:
-            if x+","+str(int(y)-25) in MAP["LandBlocks"].keys():
+            if x + "," + str(int(y) - 25) in MAP["LandBlocks"].keys():
                 endNum += 1
             else:
-                MAP["LandBlocks"][x+","+str(int(y)-25)] = 1
+                MAP["LandBlocks"][x + "," + str(int(y) - 25)] = 1
         if side == 2:
-            if str(int(x)+25)+","+y in MAP["LandBlocks"].keys():
+            if str(int(x) + 25) + "," + y in MAP["LandBlocks"].keys():
                 endNum += 1
             else:
-                MAP["LandBlocks"][str(int(x)+25)+","+y] = 1
+                MAP["LandBlocks"][str(int(x) + 25) + "," + y] = 1
         if side == 3:
-            if str(int(x)-25)+","+y in MAP["LandBlocks"].keys():
+            if str(int(x) - 25) + "," + y in MAP["LandBlocks"].keys():
                 endNum += 1
             else:
-                MAP["LandBlocks"][str(int(x)-25)+","+y] = 1
-        i +=1
+                MAP["LandBlocks"][str(int(x) - 25) + "," + y] = 1
+        i += 1
 
-    #add sand to bases
+    # add sand to bases
     endNum = 10
     i = 0
     while i < endNum:
@@ -170,26 +169,27 @@ def generateIslands():
         y = start.split(",")[1]
         side = random.randint(0, 3)
         if side == 0:
-            if x+","+str(int(y)+25) in MAP["LandBlocks"].keys():
+            if x + "," + str(int(y) + 25) in MAP["LandBlocks"].keys():
                 endNum += 1
             else:
-                MAP["LandBlocks"][x+","+str(int(y)+25)] = 4
+                MAP["LandBlocks"][x + "," + str(int(y) + 25)] = 4
         if side == 1:
-            if x+","+str(int(y)-25) in MAP["LandBlocks"].keys():
+            if x + "," + str(int(y) - 25) in MAP["LandBlocks"].keys():
                 endNum += 1
             else:
-                MAP["LandBlocks"][x+","+str(int(y)-25)] = 4
+                MAP["LandBlocks"][x + "," + str(int(y) - 25)] = 4
         if side == 2:
-            if str(int(x)+25)+","+y in MAP["LandBlocks"].keys():
+            if str(int(x) + 25) + "," + y in MAP["LandBlocks"].keys():
                 endNum += 1
             else:
-                MAP["LandBlocks"][str(int(x)+25)+","+y] = 4
+                MAP["LandBlocks"][str(int(x) + 25) + "," + y] = 4
         if side == 3:
-            if str(int(x)-25)+","+y in MAP["LandBlocks"].keys():
+            if str(int(x) - 25) + "," + y in MAP["LandBlocks"].keys():
                 endNum += 1
             else:
-                MAP["LandBlocks"][str(int(x)-25)+","+y] = 4
-        i +=1
+                MAP["LandBlocks"][str(int(x) - 25) + "," + y] = 4
+        i += 1
+
 
 def testCollision(point, pirate):
     collide = islandArray[int(point[0] / 25)][int(point[1] / 25)]
@@ -207,6 +207,7 @@ def testCollision(point, pirate):
             return False
         else:
             return True
+
 
 generateIslands()
 MAP["CollisionsList"] = []
@@ -234,8 +235,7 @@ for pos in MAP["LandBlocks"]:
     islandArray[x][y] = MAP["LandBlocks"][pos]
 
 while testCollision(MAP["PlayerPos"], False) == True:
-    MAP["PlayerPos"][0]+=25
-
+    MAP["PlayerPos"][0] += 25
 
 
 # Loading Sprites/images
@@ -740,15 +740,14 @@ def map():
     MAP["PlayerPos"][0] += MAP["PlayerSpeed"][0] * frameTime * 30
 
     # Collisions
-    if (
-        testCollision(MAP["PlayerPos"], False) == True):
+    collideTemp = testCollision(MAP["PlayerPos"], False)
+    if collideTemp == True or collideTemp == "port":
         MAP["PlayerSpeed"][0] = -MAP["PlayerSpeed"][0] * 1
         MAP["PlayerPos"][0] += MAP["PlayerSpeed"][0] * frameTime * 30
 
     MAP["PlayerPos"][1] += MAP["PlayerSpeed"][1] * frameTime * 30
-
-    if (
-        testCollision(MAP["PlayerPos"], False) == True):
+    collideTemp = testCollision(MAP["PlayerPos"], False)
+    if collideTemp == True or collideTemp == "port":
         MAP["PlayerSpeed"][1] = -MAP["PlayerSpeed"][1] * 1
         MAP["PlayerPos"][1] += MAP["PlayerSpeed"][1] * frameTime * 30
 
@@ -867,11 +866,11 @@ def optionsPage():
 
 
 class shard:
-    def __init__(self, X, Y):
+    def __init__(self, X, Y, vel):
         self.X, self.Y = X, Y
         angle = (random.random() - 0.5) * math.pi * 2
-        self.Xvol = math.sin(angle) * random.randint(5, 40)
-        self.Yvol = math.cos(angle) * random.randint(5, 40)
+        self.Xvol = math.sin(angle) * random.randint(vel * 0.2, vel * 1.5)
+        self.Yvol = math.cos(angle) * random.randint(vel * 0.2, vel * 1.5)
         self.destory = False
 
     def run(self):
@@ -888,12 +887,13 @@ class shard:
         pygame.draw.circle(gameDisplay, (100, 50, 0), (int(self.X), int(self.Y)), 3)
 
 
-class cannonBall:
-    def __init__(self, X, Y, Xvol, Yvol):
+class bullet:
+    def __init__(self, X, Y, Xvol, Yvol, Type):
         self.X, self.Y = X, Y
         self.Xvol, self.Yvol = Xvol, Yvol
         self.explode = False
         self.destory = False
+        self.type = Type  # 1 for cannonball 2 for bullet
 
     def run(self):
         self.X += self.Xvol * frameTime * 20
@@ -902,11 +902,23 @@ class cannonBall:
         pygame.draw.rect(gameDisplay, (0, 0, 0), (600, 400, 100, 500), 3)
         if self.explode == True:
             global F
-            for i in range(20):
-                F.projectiles.append(shard(self.X, self.Y))
-            self.destory = True
+            if self.type == 1:
+                for i in range(20):
+                    F.projectiles.append(shard(self.X, self.Y, 30))
+                self.destory = True
+            elif self.type == 2:
+                for i in range(2):
+                    F.projectiles.append(shard(self.X, self.Y, 10))
+                self.destory = True
         if self.checkCollide([pygame.Rect(600, 400, 100, 500)]):
-            shakeController([random.random() * 5 - 2.5, random.random() * 5 - 2.5], 0.3)
+            if self.type == 1:
+                shakeController(
+                    [random.random() * 5 - 2.5, random.random() * 5 - 2.5], 0.3
+                )
+            elif self.type == 2:
+                shakeController(
+                    [random.random() - 0.5, random.random() - 0.5], 0.1
+                )
             self.explode = True
             self.Xvol = 0
             self.Yvol = 0
@@ -925,11 +937,15 @@ class cannonBall:
     def draw(self):
         if self.destory == False:
             if self.explode == False:
-                F["drawImages"]["cannonball"].draw(self.X, self.Y)
+                if self.type == 1:
+                    F["drawImages"]["cannonball"].draw(self.X, self.Y)
+                else:
+                    F["drawImages"]["bullet"].draw(self.X, self.Y)
             else:
-                pygame.draw.circle(
-                    gameDisplay, (255, 0, 0), (int(self.X), int(self.Y)), 50
-                )
+                if self.type == 1:
+                    pygame.draw.circle(
+                        gameDisplay, (255, 0, 0), (int(self.X), int(self.Y)), 50
+                    )
 
 
 class button:
@@ -997,6 +1013,7 @@ def destroyProjectiles():
 F["images"] = {
     "cannonball": loadImage("fightAssets/cannon_ball.png"),
     "bullets": loadImage("fightAssets/bullets.png"),
+    "bullet": loadImage("fightAssets/bullet.png"),
     "nuclearBomb": loadImage("fightAssets/nuclear_bomb.png"),
     "net": loadImage("fightAssets/net.png"),
 }
@@ -1017,6 +1034,7 @@ class drawImage:
 F["drawImages"] = {
     "cannonball": drawImage(F["images"]["cannonball"]),
     "bullets": drawImage(F["images"]["bullets"]),
+    "bullet" : drawImage(F["images"]["bullet"]),
     "nuclearBomb": drawImage(F["images"]["nuclearBomb"]),
     "net": drawImage(F["images"]["net"]),
 }
@@ -1024,6 +1042,7 @@ F["drawImages"] = {
 F["drawImages"]["cannonball"].resize(32, 32)
 F["drawImages"]["net"].resize(32, 32)
 F["drawImages"]["bullets"].resize(32, 32)
+F["drawImages"]["bullet"].resize(24, 24)
 F["drawImages"]["nuclearBomb"].resize(32, 32)
 for item in list(F["images"].keys()):
     F["images"][item] = pygame.transform.scale(
@@ -1050,7 +1069,7 @@ slotButtons = {
         (255, 255, 255),
     ),
     "nuclearBomb": button(
-        displayWidth * 0.17,
+        displayWidth * 0.29,
         displayHeight * 0.9,
         displayWidth * 0.07,
         displayWidth * 0.07,
@@ -1059,7 +1078,7 @@ slotButtons = {
         (255, 255, 255),
     ),
     "net": button(
-        displayWidth * 0.17,
+        displayWidth * 0.44,
         displayHeight * 0.9,
         displayWidth * 0.07,
         displayWidth * 0.07,
@@ -1077,6 +1096,8 @@ F.placeHolders = [
 F.mode = "nothing"
 F.pressed = True
 F.projectiles = []
+F.swivelTimer = 0
+F.cannonTimer = 0
 
 
 def battleScreen():
@@ -1087,7 +1108,7 @@ def battleScreen():
     gameDisplay.blit(F.placeHolders[2], (585, 250))
 
     if F.mode == "cannon":
-        if mouseButtons[0] == True:
+        if mouseButtons[0] == True and F.cannonTimer < 0:
             x = displayWidth * 0.2 - mousePos[0]
             y = displayHeight * 0.6 - mousePos[1]
             angle = -math.atan2(y, x) + math.pi / 2
@@ -1107,10 +1128,28 @@ def battleScreen():
             xvol = math.sin(angle) * 55
             yvol = math.cos(angle) * 55
             F.projectiles.append(
-                cannonBall(displayWidth * 0.2, displayHeight * 0.6, xvol, yvol)
+                bullet(displayWidth * 0.2, displayHeight * 0.6, xvol, yvol, 1)
             )
             shakeController([random.random() * 2 - 1, random.random() * 2 - 1], 0.2)
             F.pressed = False
+            F.cannonTimer = 0.5
+
+    if F.mode == "swivel":
+        if mouseButtons[0] == True and F.swivelTimer < 0:
+            x = displayWidth * 0.2 - mousePos[0]
+            y = displayHeight * 0.6 - mousePos[1]
+            angle = -math.atan2(y, x) + math.pi / 2
+            angle += (random.random()-0.5) /3
+            xvol = math.sin(angle) * 55
+            yvol = math.cos(angle) * 55
+            F.projectiles.append(
+                bullet(displayWidth * 0.2, displayHeight * 0.6, xvol, yvol, 2)
+            )
+            shakeController([random.random() - 0.5, random.random() - 0.5], 0.1)
+            F.swivelTimer = 0.1
+
+    F.swivelTimer -= frameTime
+    F.cannonTimer -= frameTime
 
     for i in slotButtons:
         if F.mode == i:
@@ -1469,6 +1508,7 @@ while True:
                 Keys["S"] = False
             if event.key == pygame.K_d:
                 Keys["D"] = False
+            
     if gameState == "Cutscene":
         cutScene()
     if gameState == "Menu":
