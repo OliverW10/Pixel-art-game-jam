@@ -5,6 +5,7 @@ import random
 import pygame
 import islands as islandData
 import numpy as np
+import json
 
 # Init
 displayWidth, displayHeight = 800, 600
@@ -23,13 +24,21 @@ class AttrDict(dict):
     def __setattr__(self, attr, value):
         self[attr] = value
 
+#Loading save
+
+file = open("not_the_save.txt", "r+")
 
 # Variables
 global gameState
 gameState = "Cutscene"
-global MAP, MENU, F, PREP, SETTINGS
+global MAP, MENU, F, PREP, SAVE
 frameTime = 0
-MAP = MENU = F = PREP = SHOP = SETTINGS = AttrDict({})
+MAP = MENU = F = PREP = SHOP = AttrDict({})
+
+SAVE = json.loads(file.read())
+print(type(SAVE))
+print(SAVE)
+
 Keys = {"W": False, "A": False, "S": False, "D": False, "E": False}
 F.inventory = {"sailors": [], "cannonballs": 0, "nets": 0}
 
@@ -131,7 +140,7 @@ def generateIslands():
             MAP["LandBlocks"][str(x + blockX) + "," + str(y + blockY)] = 2
 
     # add sand to bases
-    endNum = 700
+    endNum = 500
     i = 0
     while i < endNum:
         start = random.choice(list(MAP["LandBlocks"].keys()))
@@ -305,6 +314,18 @@ PREP["FightButtonRect"] = pygame.Rect(
 )
 PREP["Text"] = {}
 PREP["Xbutton"] = loadImage("mapAssets/prepXbutton.png")
+
+
+class drawImage:
+    def __init__(self, img):
+        self.img = img
+
+    def resize(self, W, H):
+        self.img = pygame.transform.scale(self.img, (W, H))
+
+    def draw(self, X, Y):
+        rect = self.img.get_rect()
+        gameDisplay.blit(self.img, (X - rect.w / 2, Y - rect.h / 2))
 
 
 class sparkle:
@@ -886,6 +907,37 @@ class shard:
     def draw(self):
         pygame.draw.circle(gameDisplay, (100, 50, 0), (int(self.X), int(self.Y)), 3)
 
+F.cannonballExplosion = [loadImage("fightAssets/cannonExplosion/0.png"),
+loadImage("fightAssets/cannonExplosion/1.png"),
+loadImage("fightAssets/cannonExplosion/2.png"),
+loadImage("fightAssets/cannonExplosion/3.png"),
+loadImage("fightAssets/cannonExplosion/4.png")]
+
+for i in range(len(F.cannonballExplosion)):
+	F.cannonballExplosion[i] = drawImage(F.cannonballExplosion[i])
+	F.cannonballExplosion[i].resize(32, 32)
+F.bulletExplosion = []
+class explosion:
+	def __init__(self, Type, X, Y):
+		if Type == 1:
+			self.frames = F.cannonballExplosion
+			self.timePerFrame = 0.1
+		elif Type == 2:
+			self.frames = F.bulletExplosion
+			self.timePerFrame = 0.1
+		self.frame = 0
+		self.timeRunning = 0
+		self.X = X
+		self.Y = Y
+		self.destory = False
+
+	def run(self):
+		self.timeRunning += frameTime
+		self.frame = math.floor(self.timeRunning / self.timePerFrame)
+		if self.frame >= len(self.frames):
+			self.destory = True
+		else:
+			self.frames[self.frame].draw(self.X, self.Y)
 
 class bullet:
     def __init__(self, X, Y, Xvol, Yvol, Type):
@@ -942,15 +994,16 @@ class bullet:
                 else:
                     F["drawImages"]["bullet"].draw(self.X, self.Y)
             else:
-                if self.type == 1:
-                    pygame.draw.circle(
-                        gameDisplay, (255, 0, 0), (int(self.X), int(self.Y)), 50
-                    )
+                F.projectiles.append(explosion(self.type, self.X, self.Y))
 
+def drawCooldown(cooldown, totalCooldown, rect):
+	part = cooldown / totalCooldown
+	if part>=0:
+		pygame.draw.rect(gameDisplay, (200, 200, 200), (rect.x, rect.y + rect.h, rect.w, -rect.h*part))
 
 class button:
     def __init__(
-        self, X, Y, W, H, draw, shadowColour, buttonColour
+        self, X, Y, W, H, draw, shadowColour, buttonColour, ability
     ):  # draw should be a list of functions that take X, Y to be drawn on the button
         self.X = X
         self.Y = Y
@@ -961,6 +1014,7 @@ class button:
         self.pressed = False
         self.released = False
         self.colours = [shadowColour, buttonColour]
+        self.ability = ability
 
     def run(self, down):
         if self.released == True:
@@ -993,6 +1047,10 @@ class button:
             self.colours[1],
             (self.X + hover[0], self.Y + hover[1], self.W, self.H),
         )
+        if self.ability == "cannon":
+        	drawCooldown(F.cannonTimer, 1.5, pygame.Rect(self.X+hover[0], self.Y+hover[1], self.W, self.H))
+        elif self.ability == "bullets":
+        	drawCooldown(F.swivelTimer, 0.2, pygame.Rect(self.X+hover[0], self.Y+hover[1], self.W, self.H))
         for i in range(len(self.drawList)):
             self.drawList[i](
                 self.X + self.W / 2 + hover[0], self.Y + self.H / 2 + hover[1]
@@ -1018,17 +1076,6 @@ F["images"] = {
     "net": loadImage("fightAssets/net.png"),
 }
 
-
-class drawImage:
-    def __init__(self, img):
-        self.img = img
-
-    def resize(self, W, H):
-        self.img = pygame.transform.scale(self.img, (W, H))
-
-    def draw(self, X, Y):
-        rect = self.img.get_rect()
-        gameDisplay.blit(self.img, (X - rect.w / 2, Y - rect.h / 2))
 
 
 F["drawImages"] = {
@@ -1058,6 +1105,7 @@ slotButtons = {
         [F["drawImages"]["cannonball"].draw],
         (0, 0, 0),
         (250, 250, 250),
+        "cannon"
     ),
     "swivel": button(
         displayWidth * 0.17,
@@ -1067,6 +1115,7 @@ slotButtons = {
         [F["drawImages"]["bullets"].draw],
         (0, 0, 0),
         (255, 255, 255),
+        "bullets"
     ),
     "nuclearBomb": button(
         displayWidth * 0.29,
@@ -1076,6 +1125,7 @@ slotButtons = {
         [F["drawImages"]["nuclearBomb"].draw],
         (0, 0, 0),
         (255, 255, 255),
+        "bomb"
     ),
     "net": button(
         displayWidth * 0.44,
@@ -1085,6 +1135,7 @@ slotButtons = {
         [F["drawImages"]["net"].draw],
         (0, 0, 0),
         (255, 255, 255),
+        "net"
     ),
 }
 
@@ -1132,21 +1183,21 @@ def battleScreen():
             )
             shakeController([random.random() * 2 - 1, random.random() * 2 - 1], 0.2)
             F.pressed = False
-            F.cannonTimer = 0.5
+            F.cannonTimer = 1.5
 
     if F.mode == "swivel":
         if mouseButtons[0] == True and F.swivelTimer < 0:
             x = displayWidth * 0.2 - mousePos[0]
             y = displayHeight * 0.6 - mousePos[1]
             angle = -math.atan2(y, x) + math.pi / 2
-            angle += (random.random()-0.5) /3
-            xvol = math.sin(angle) * 55
-            yvol = math.cos(angle) * 55
+            angle += (random.random()-0.5) / 5
+            xvol = math.sin(angle) * 40
+            yvol = math.cos(angle) * 40
             F.projectiles.append(
                 bullet(displayWidth * 0.2, displayHeight * 0.6, xvol, yvol, 2)
             )
             shakeController([random.random() - 0.5, random.random() - 0.5], 0.1)
-            F.swivelTimer = 0.1
+            F.swivelTimer = 0.2
 
     F.swivelTimer -= frameTime
     F.cannonTimer -= frameTime
@@ -1166,7 +1217,7 @@ def battleScreen():
 
 def cutScene():  # Need to make
     global gameState
-    gameState = "Map"
+    gameState = "Menu"
 
 
 SHOP["Text"]["Speed"] = {}
@@ -1221,6 +1272,7 @@ SHOP["Buttons"]["Speed"] = button(
     [SHOP["Text"]["Speed"][MAP["PlayerLevels"]["speed"]].XYdraw],
     (20, 20, 0),
     (100, 75, 50),
+    False
 )
 SHOP["Buttons"]["Armor"] = button(
     displayHeight * 0.1,
@@ -1230,6 +1282,7 @@ SHOP["Buttons"]["Armor"] = button(
     [SHOP["Text"]["Armor"][MAP["PlayerLevels"]["armor"]].XYdraw],
     (20, 20, 0),
     (100, 75, 50),
+    False
 )
 SHOP["Buttons"]["HP"] = button(
     displayHeight * 0.1,
@@ -1239,6 +1292,7 @@ SHOP["Buttons"]["HP"] = button(
     [SHOP["Text"]["HP"][MAP["PlayerLevels"]["HP"]].XYdraw],
     (20, 20, 0),
     (100, 75, 50),
+    False
 )
 
 
