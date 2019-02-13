@@ -10,6 +10,8 @@ clock = pygame.time.Clock()
 islands = {}
 drawType = 4
 
+png_test = pygame.image.load("mapAssets/Land/Sand/1.png")
+png_test = pygame.transform.scale(png_test, (128, 128))
 
 def delBlue():
 	global islands
@@ -65,5 +67,6 @@ while True:
 		y = int(pos.split(",")[1])
 		pygame.draw.rect(screenDisplay, (colour), (x, y, 25, 25))
 	delBlue()
+	screenDisplay.blit(png_test, (100,100))
 	pygame.display.update()
 	clock.tick()

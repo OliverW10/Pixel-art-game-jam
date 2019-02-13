@@ -39,8 +39,9 @@ MAP = MENU = F = PREP = SHOP = AttrDict({})
 SAVE = json.loads(file.read())
 
 Keys = {"W": False, "A": False, "S": False, "D": False, "E": False, "Esc" : False}
-F.inventory = SAVE["inventory"]
-#F.inventory = {"sailors": [], "cannonballs": 10, "nets": 3, "bullets" : 20}
+#SAVE["inventory"] = SAVE["inventory"]
+print(SAVE)
+#SAVE["inventory"] = {"sailors": [], "cannonballs": 10, "nets": 3, "bullets" : 20}
 
 # MAP variables
 MAP["SparkleType"] = 1  # 0 is shit, 1 is fps low and 2 is off
@@ -56,13 +57,6 @@ MAP["PlayerPos"] = [MAP["AreaSize"][0] / 2, MAP["AreaSize"][0] / 2]
 MAP["ScreenPos"] = [MAP["AreaSize"][0] / 2, MAP["AreaSize"][0] / 2]
 MAP["PlayerSpeed"] = [0, 0]
 MAP["PlayerDir"] = 0
-#SAVE = {
-#	"cannonball": 5,
-#	"nets": 2,
-#	"cannon": 2,
-#	"sailors": [],
-#	"Gold": 100,
-#}  # Inventory
 MAP["Stats"] = {
 	"speed": [1.5, 2.5, 3.5, 5, 25],
 	"armor": [1.3, 1.15, 1, 0.8, 0.1],
@@ -860,9 +854,9 @@ def map():
 			if distance < 100 and mouseButtons[0] == True:
 				PREP["Enemy"] = copy.copy(MAP["PirateShips"][i])
 				gameState = "Prep"
-				F.text["cannonballAmmo"] = text(str(F.inventory["cannonballs"]), 20, -20,  10, (0,0,0))
+				F.text["cannonballAmmo"] = text(str(SAVE["inventory"]["cannonballs"]), 20, -20,  10, (0,0,0))
 				slotButtons["cannon"].changeDraw([F["drawImages"]["cannonball"].draw, F.text["cannonballAmmo"].XYdraw])
-				F.text["bulletAmmo"] = text(str(F.inventory["bullets"]), 20, -20,  10, (0,0,0))
+				F.text["bulletAmmo"] = text(str(SAVE["inventory"]["bullets"]), 20, -20,  10, (0,0,0))
 				slotButtons["swivel"].changeDraw([F["drawImages"]["bullets"].draw, F.text["bulletAmmo"].XYdraw])
 				# Drawing
 				# Waves
@@ -1179,8 +1173,8 @@ for item in list(F["images"].keys()):
 
 
 F.text = {}
-F.text["cannonballAmmo"] = text(str(F.inventory["cannonballs"]), 20, -20,  10, (0,0,0))
-F.text["bulletAmmo"] = text(str(F.inventory["bullets"]), 20, -20, 10, (0,0,0))
+F.text["cannonballAmmo"] = text(str(SAVE["inventory"]["cannonballs"]), 20, -20,  10, (0,0,0))
+F.text["bulletAmmo"] = text(str(SAVE["inventory"]["bullets"]), 20, -20, 10, (0,0,0))
 
 slotButtons = {
 	"cannon": button(
@@ -1263,9 +1257,9 @@ def battleScreen():
 			angle = -math.atan2(y, x) + math.pi / 2
 			xvol = math.sin(angle) * 55
 			yvol = math.cos(angle) * 55
-			if F.inventory["cannonballs"] > 0:
-				F.inventory["cannonballs"]-=1
-				F.text["cannonballAmmo"] = text(str(F.inventory["cannonballs"]), 20, -20,  10, (0,0,0))
+			if SAVE["inventory"]["cannonballs"] > 0:
+				SAVE["inventory"]["cannonballs"]-=1
+				F.text["cannonballAmmo"] = text(str(SAVE["inventory"]["cannonballs"]), 20, -20,  10, (0,0,0))
 				slotButtons["cannon"].changeDraw([F["drawImages"]["cannonball"].draw, F.text["cannonballAmmo"].XYdraw])
 				F.projectiles.append(
 					bullet(displayWidth * 0.2, displayHeight * 0.6, xvol, yvol, 1)
@@ -1282,9 +1276,9 @@ def battleScreen():
 			angle += (random.random()-0.5) / 5
 			xvol = math.sin(angle) * 40
 			yvol = math.cos(angle) * 40
-			if F.inventory["bullets"] > 0:
-				F.inventory["bullets"]-=1
-				F.text["bulletAmmo"] = text(str(F.inventory["bullets"]), 20, -20, 10, (0,0,0))
+			if SAVE["inventory"]["bullets"] > 0:
+				SAVE["inventory"]["bullets"]-=1
+				F.text["bulletAmmo"] = text(str(SAVE["inventory"]["bullets"]), 20, -20, 10, (0,0,0))
 				slotButtons["swivel"].changeDraw([F["drawImages"]["bullets"].draw, F.text["bulletAmmo"].XYdraw])
 				F.projectiles.append(
 					bullet(displayWidth * 0.2, displayHeight * 0.6, xvol, yvol, 2)
@@ -1419,8 +1413,9 @@ def shop():
 	SHOP["Text"]["Crew"].draw()
 
 	if SHOP["Buttons"]["cannonball"].run(False) == True:
-		F.inventory["cannonballs"]+=1
+		SAVE["inventory"]["cannonballs"]+=1
 		SAVE["gold"] -= 10
+		print(SAVE["gold"])
 
 	if (
 		SHOP["Buttons"]["Speed"].run(False) == True
@@ -1563,7 +1558,7 @@ def prepMenu(playerCargo, enemyCargo):
 	):
 		for i in range(len(playerCargo["sailors"])):
 			if playerCargo["sailors"][i].location == 0:
-				F.inventory["sailors"].append(playerCargo["sailors"][i])
+				SAVE["inventory"]["sailors"].append(playerCargo["sailors"][i])
 		gameState = "Fight"
 	if Keys["Esc"]:
 		gameState = "Map"
