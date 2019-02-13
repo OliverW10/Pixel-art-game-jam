@@ -1,6 +1,7 @@
+import time
+startLoad = time.time()
 import copy
 import math
-import time
 import random
 import pygame
 import islands as islandData
@@ -36,11 +37,10 @@ frameTime = 0
 MAP = MENU = F = PREP = SHOP = AttrDict({})
 
 SAVE = json.loads(file.read())
-print(type(SAVE))
-print(SAVE)
 
-Keys = {"W": False, "A": False, "S": False, "D": False, "E": False}
-F.inventory = {"sailors": [], "cannonballs": 0, "nets": 0}
+Keys = {"W": False, "A": False, "S": False, "D": False, "E": False, "Esc" : False}
+F.inventory = SAVE["inventory"]
+#F.inventory = {"sailors": [], "cannonballs": 10, "nets": 3, "bullets" : 20}
 
 # MAP variables
 MAP["SparkleType"] = 1  # 0 is shit, 1 is fps low and 2 is off
@@ -56,17 +56,17 @@ MAP["PlayerPos"] = [MAP["AreaSize"][0] / 2, MAP["AreaSize"][0] / 2]
 MAP["ScreenPos"] = [MAP["AreaSize"][0] / 2, MAP["AreaSize"][0] / 2]
 MAP["PlayerSpeed"] = [0, 0]
 MAP["PlayerDir"] = 0
-MAP["PlayerCargo"] = {
-	"cannonball": 5,
-	"nets": 2,
-	"cannon": 2,
-	"sailors": [],
-	"Gold": 100,
-}  # Inventory
+#SAVE = {
+#	"cannonball": 5,
+#	"nets": 2,
+#	"cannon": 2,
+#	"sailors": [],
+#	"Gold": 100,
+#}  # Inventory
 MAP["Stats"] = {
 	"speed": [1.5, 2.5, 3.5, 5, 25],
 	"armor": [1.3, 1.15, 1, 0.8, 0.1],
-	"HP": [50, 60, 75, 100, 150, 250, 350, 500, 2000],
+	"HP": [50, 60, 75, 100, 150, 250, 350, 500, 2000], #hehe
 }
 MAP["PlayerLevels"] = {"speed": 0, "armor": 0, "HP": 0}
 MAP["PlayerStats"] = {
@@ -123,30 +123,16 @@ islands = {}
 
 islandTypes = islandData.data[:]
 
-class block:
-	def __init__(self, X, Y, dirc):
+class tile:
+	def __init__(self, X, Y, path, angle):
 		self.X = X
 		self.Y = Y
-		#Get all the different orientations of the island edges possible
-		if dirc == "N1":
-			self.sprite = loadImage("mapAssets/Land/Sand/1.png")
-			self.sprite = pygame.transform.rotate(self.sprite, 180)
-			self.sprite = pygame.transform.scale(self.sprite, (25, 25))
-		if dirc == "E1":
-			self.sprite = loadImage("mapAssets/Land/Sand/1.png")
-			self.sprite = pygame.transform.rotate(self.sprite, -90)
-			self.sprite = pygame.transform.scale(self.sprite, (25, 25))
-		if dirc == "S1":
-			self.sprite = loadImage("mapAssets/Land/Sand/1.png")
-			self.sprite = pygame.transform.rotate(self.sprite, 0)
-			self.sprite = pygame.transform.scale(self.sprite, (25, 25))
-		if dirc == "W1":
-			self.sprite = loadImage("mapAssets/Land/Sand/1.png")
-			self.sprite = pygame.transform.rotate(self.sprite, 90)
-			self.sprite = pygame.transform.scale(self.sprite, (25, 25))
-		if dirc == "N2":
-			self.sprite = loadImage("mapAssets/Land/Sand/2.png")
-			self.sprite = pygame.transform.scale
+		self.img = loadImage(path)
+		self.img = pygame.transform.rotate(self.img, angle)
+		self.img = pygame.transform.scale(self.img, (25,25))
+
+	def run(self):
+		gameDisplay.blit(self.img, (self.X - MAP["ScreenPos"][0], self.Y - MAP["ScreenPos"][1]))
 
 def generateIslands():
 	global islands
@@ -224,18 +210,73 @@ def generateIslands():
 		i += 1
 
 	#Generate the sides for tile drawing
+	MAP["DrawList"] = []
 	for i in MAP["LandBlocks"].keys():
+		sideCovered = 0
 		#Find positions
 		X = i.split(",")[0]
 		Y = i.split(",")[1]
-		#test blocks around it by using in (returns bool)
-		N = X+","+str(int(Y)-25) in MAP["LandBlocks"].keys() 
-		E = str(int(X)+25)+","+Y in MAP["LandBlocks"].keys()
-		S = X+","+str(int(Y)+25) in MAP["LandBlocks"].keys()
-		W = str(int(X)-25)+","+Y in MAP["LandBlocks"].keys()
-		
-		if 
+		if MAP["LandBlocks"][i] == 1:
+			#test blocks around it by using in (returns bool)
+			N = X+","+str(int(Y)-25) in MAP["LandBlocks"].keys() 
+			E = str(int(X)+25)+","+Y in MAP["LandBlocks"].keys()
+			S = X+","+str(int(Y)+25) in MAP["LandBlocks"].keys()
+			W = str(int(X)-25)+","+Y in MAP["LandBlocks"].keys()
+			NE = str(int(X)+25)+","+str(int(Y)-25) in MAP["LandBlocks"].keys()
+			SE = str(int(X)+25)+","+str(int(Y)+25) in MAP["LandBlocks"].keys()
+			NW = str(int(X)-25)+","+str(int(Y)-25) in MAP["LandBlocks"].keys()
+			SW = str(int(X)-25)+","+str(int(Y)+25) in MAP["LandBlocks"].keys()
 
+			if N:
+				sideCovered+=1
+			if E:
+				sideCovered+=1
+			if S:
+				sideCovered+=1
+			if W:
+				sideCovered+=1
+
+			if sideCovered == 0:
+				MAP["DrawList"][i] = tile("mapAssets/Land/Sand/4.png", random.randint(-2, 1)*90)
+
+			elif sideCovered == 1: #Done
+				if N == True:
+					MAP["DrawList"].append(tile(int(X), int(Y), "mapAssets/Land/Sand/3.png", 0))
+				elif S == True:
+					MAP["DrawList"].append(tile(int(X), int(Y), "mapAssets/Land/Sand/3.png", 180))
+				elif E == True:
+					MAP["DrawList"].append(tile(int(X), int(Y), "mapAssets/Land/Sand/3.png", -90))
+				elif W == True:
+					MAP["DrawList"].append(tile(int(X), int(Y),"mapAssets/Land/Sand/3.png", 90))
+
+			elif sideCovered == 2:
+				if N == True and S == True:
+					MAP["DrawList"].append(tile(int(X), int(Y), "mapAssets/Land/Sand/1+1.png", 0))
+				if W == True and E == True:
+					MAP["DrawList"].append(tile(int(X), int(Y), "mapAssets/Land/Sand/1+1.png", 90))
+
+				if N == True and E == True: #edge is SE
+					MAP["DrawList"].append(tile(int(X), int(Y), "mapAssets/Land/Sand/2.png", -90))
+				if S == True and E == True:
+					MAP["DrawList"].append(tile(int(X), int(Y), "mapAssets/Land/Sand/2.png", 180))
+				if N == True and W == True:
+					MAP["DrawList"].append(tile(int(X), int(Y), "mapAssets/Land/Sand/2.png", 0))
+				if S == True and W == True:
+					MAP["DrawList"].append(tile(int(X), int(Y), "mapAssets/Land/Sand/2.png", 90))
+
+			elif sideCovered == 3:
+				if N == False:
+					MAP["DrawList"].append(tile(int(X), int(Y), "mapAssets/Land/Sand/1.png", 180))
+				elif S == False:
+					MAP["DrawList"].append(tile(int(X), int(Y), "mapAssets/Land/Sand/1.png", 0))
+				elif E == False:
+					MAP["DrawList"].append(tile(int(X), int(Y), "mapAssets/Land/Sand/1.png", 90))
+				elif W == False:
+					MAP["DrawList"].append(tile(int(X), int(Y),"mapAssets/Land/Sand/1.png", -90))
+
+			elif sideCovered == 4: #corner points ES
+				MAP["DrawList"].append(tile(int(X), int(Y), "mapAssets/Land/Sand/0.png", random.randint(-2, 1)*90)) 
+ 
 
 def testCollision(point, pirate):
 	collide = islandArray[int(point[0] / 25)][int(point[1] / 25)]
@@ -376,7 +417,7 @@ class sparkle:
 		self.X += move[0]
 		self.Y += move[1]
 		self.delChance = self.checkRarety()
-		self.checkMove()
+		self.checkMove() #yuuuh
 		pygame.draw.rect(gameDisplay, (200, 200, 255), (self.X, self.Y, 5, 5))
 
 	def checkRarety(self):
@@ -431,18 +472,13 @@ class text:
 		self.Y = Y
 		self.rect.center = (self.X, self.Y)
 
-	def changeMessage(self, newMessage, colour):
-		self.messsage = newMessage
-		self.surf = pygame.Surface((self.rect.x, self.rect.y))
-		self.surf, self.rect = text_objects(self.message, self.font, colour)
-		self.rect.center = (self.X, self.Y)
 
 	def draw(self):
 		gameDisplay.blit(self.surf, self.rect)
 
 	def XYdraw(self, X, Y):
 		self.rect.center = (X, Y)
-		gameDisplay.blit(self.surf, self.rect)
+		gameDisplay.blit(self.surf, (self.rect.x + self.X, self.rect.y + self.Y, self.rect.w, self.rect.h))
 
 
 class sailor:
@@ -528,9 +564,9 @@ class sailor:
 		gameDisplay.blit(drawSprite, Pos)
 
 
-MAP["PlayerCargo"]["sailors"] = [sailor(3), sailor(2), sailor(2)]
-for i in range(len(MAP["PlayerCargo"]["sailors"])):
-	MAP["PlayerCargo"]["sailors"][i].setPos((i * 50) + 150, displayHeight * 0.7)
+SAVE["sailors"] = [sailor(3), sailor(2), sailor(2)]
+for i in range(len(SAVE["sailors"])):
+	SAVE["sailors"][i].setPos((i * 50) + 150, displayHeight * 0.7)
 
 
 class wave:
@@ -686,7 +722,7 @@ class PirateShip:
 			)
 
 
-# MAP["Text"]["Gold"] = text("Gold: "+str(MAP["Stat"]))
+MAP["Text"]["Gold"] = text("Gold: "+str(SAVE["gold"]), displayWidth*0.075, displayHeight*0.03, 20, (0,0,0))
 
 # GAME STATES (Functions)
 def map():
@@ -824,7 +860,10 @@ def map():
 			if distance < 100 and mouseButtons[0] == True:
 				PREP["Enemy"] = copy.copy(MAP["PirateShips"][i])
 				gameState = "Prep"
-
+				F.text["cannonballAmmo"] = text(str(F.inventory["cannonballs"]), 20, -20,  10, (0,0,0))
+				slotButtons["cannon"].changeDraw([F["drawImages"]["cannonball"].draw, F.text["cannonballAmmo"].XYdraw])
+				F.text["bulletAmmo"] = text(str(F.inventory["bullets"]), 20, -20,  10, (0,0,0))
+				slotButtons["swivel"].changeDraw([F["drawImages"]["bullets"].draw, F.text["bulletAmmo"].XYdraw])
 				# Drawing
 				# Waves
 	MAP["WaveSpawnTimer"] += frameTime
@@ -845,7 +884,7 @@ def map():
 	# Land
 	for pos in MAP["LandBlocks"]:
 		if MAP["LandBlocks"][pos] == 1:  # sand
-			colour = (220, 220, 10)
+			colour = (0, 0, 200)#(220, 220, 2)
 		elif MAP["LandBlocks"][pos] == 2:  # grass
 			colour = (0, 150, 0)
 		elif MAP["LandBlocks"][pos] == 3:  # town
@@ -865,7 +904,12 @@ def map():
 			and drawY < displayHeight
 		):
 			pygame.draw.rect(gameDisplay, (colour), (drawX, drawY, 25, 25))
-			# Pirates
+	
+	#new land
+	for i in range(len(MAP["DrawList"])):
+		MAP["DrawList"][i].run()
+
+	# Pirates
 	for i in range(len(MAP["PirateShips"])):
 		MAP["PirateShips"][i].AI()
 		MAP["PirateShips"][i].X
@@ -1133,13 +1177,18 @@ for item in list(F["images"].keys()):
 		F["images"][item], (round(displayWidth * 0.06), int(displayWidth * 0.06))
 	)
 
+
+F.text = {}
+F.text["cannonballAmmo"] = text(str(F.inventory["cannonballs"]), 20, -20,  10, (0,0,0))
+F.text["bulletAmmo"] = text(str(F.inventory["bullets"]), 20, -20, 10, (0,0,0))
+
 slotButtons = {
 	"cannon": button(
 		displayWidth * 0.05,
 		displayHeight * 0.9,
 		displayWidth * 0.07,
 		displayWidth * 0.07,
-		[F["drawImages"]["cannonball"].draw],
+		[F["drawImages"]["cannonball"].draw, F.text["cannonballAmmo"].XYdraw],
 		(0, 0, 0),
 		(250, 250, 250),
 		"cannon"
@@ -1149,7 +1198,7 @@ slotButtons = {
 		displayHeight * 0.9,
 		displayWidth * 0.07,
 		displayWidth * 0.07,
-		[F["drawImages"]["bullets"].draw],
+		[F["drawImages"]["bullets"].draw, F.text["bulletAmmo"].XYdraw],
 		(0, 0, 0),
 		(255, 255, 255),
 		"bullets"
@@ -1187,7 +1236,6 @@ F.projectiles = []
 F.swivelTimer = 0
 F.cannonTimer = 0
 
-
 def battleScreen():
 	gameDisplay.fill((255, 255, 255))
 	# Display Assets
@@ -1215,12 +1263,16 @@ def battleScreen():
 			angle = -math.atan2(y, x) + math.pi / 2
 			xvol = math.sin(angle) * 55
 			yvol = math.cos(angle) * 55
-			F.projectiles.append(
-				bullet(displayWidth * 0.2, displayHeight * 0.6, xvol, yvol, 1)
-			)
-			shakeController([random.random() * 2 - 1, random.random() * 2 - 1], 0.2)
+			if F.inventory["cannonballs"] > 0:
+				F.inventory["cannonballs"]-=1
+				F.text["cannonballAmmo"] = text(str(F.inventory["cannonballs"]), 20, -20,  10, (0,0,0))
+				slotButtons["cannon"].changeDraw([F["drawImages"]["cannonball"].draw, F.text["cannonballAmmo"].XYdraw])
+				F.projectiles.append(
+					bullet(displayWidth * 0.2, displayHeight * 0.6, xvol, yvol, 1)
+				)
+				shakeController([random.random() * 2 - 1, random.random() * 2 - 1], 0.2)
+				F.cannonTimer = 1.5
 			F.pressed = False
-			F.cannonTimer = 1.5
 
 	if F.mode == "swivel":
 		if mouseButtons[0] == True and F.swivelTimer < 0:
@@ -1230,11 +1282,17 @@ def battleScreen():
 			angle += (random.random()-0.5) / 5
 			xvol = math.sin(angle) * 40
 			yvol = math.cos(angle) * 40
-			F.projectiles.append(
-				bullet(displayWidth * 0.2, displayHeight * 0.6, xvol, yvol, 2)
-			)
-			shakeController([random.random() - 0.5, random.random() - 0.5], 0.1)
-			F.swivelTimer = 0.2
+			if F.inventory["bullets"] > 0:
+				F.inventory["bullets"]-=1
+				F.text["bulletAmmo"] = text(str(F.inventory["bullets"]), 20, -20, 10, (0,0,0))
+				slotButtons["swivel"].changeDraw([F["drawImages"]["bullets"].draw, F.text["bulletAmmo"].XYdraw])
+				F.projectiles.append(
+					bullet(displayWidth * 0.2, displayHeight * 0.6, xvol, yvol, 2)
+				)
+				shakeController([random.random() - 0.5, random.random() - 0.5], 0.1)
+				F.swivelTimer = 0.05
+			else:
+				F.swivelTimer = 0.05
 
 	F.swivelTimer -= frameTime
 	F.cannonTimer -= frameTime
@@ -1254,15 +1312,15 @@ def battleScreen():
 
 def cutScene():  # Need to make
 	global gameState
-	gameState = "Menu"
+	gameState = "shop"
 
 
 SHOP["Text"]["Speed"] = {}
 for i in range(len(SHOP["UpgradeCosts"]["speed"])):
 	SHOP["Text"]["Speed"][i] = text(
 		"Speed: " + str(SHOP["UpgradeCosts"]["speed"][i]),
-		displayWidth * 0.3,
-		displayHeight * 0.4,
+		0,
+		0,
 		25,
 		(10, 10, 10),
 	)
@@ -1271,18 +1329,18 @@ SHOP["Text"]["Armor"] = {}
 for i in range(len(SHOP["UpgradeCosts"]["armor"])):
 	SHOP["Text"]["Armor"][i] = text(
 		"Armor: " + str(SHOP["UpgradeCosts"]["armor"][i]),
-		displayWidth * 0.3,
-		displayHeight * 0.4,
+		0,
+		0,
 		25,
 		(10, 10, 10),
 	)
-
+#epic
 SHOP["Text"]["HP"] = {}
 for i in range(len(SHOP["UpgradeCosts"]["HP"])):
 	SHOP["Text"]["HP"][i] = text(
 		"HP: " + str(SHOP["UpgradeCosts"]["HP"][i]),
-		displayWidth * 0.3,
-		displayHeight * 0.4,
+		0,
+		0,
 		29,
 		(10, 10, 10),
 	)
@@ -1299,6 +1357,7 @@ SHOP["Text"]["Items"] = text(
 SHOP["Text"]["Crew"] = text(
 	"Crew", displayWidth * 0.5, displayHeight * 0.6, 35, (20, 20, 0)
 )
+SHOP["Text"]["Cannonball"] = text("10G", 0, 25, 10, (20, 20, 20))
 
 SHOP["Buttons"] = {}
 SHOP["Buttons"]["Speed"] = button(
@@ -1331,7 +1390,7 @@ SHOP["Buttons"]["HP"] = button(
 	(100, 75, 50),
 	False
 )
-
+SHOP["Buttons"]["cannonball"] = button(displayWidth*0.6, displayHeight*0.4, 60, 60, [SHOP["Text"]["Cannonball"].XYdraw, F.drawImages["cannonball"].draw], (20, 20, 0), (100, 75, 50), False)
 
 def shop():
 	gameDisplay.blit(MAP["BuyBoard"], (0, 0))
@@ -1352,11 +1411,16 @@ def shop():
 		(displayWidth * 0.05 + hover[0], 24 + hover[1], 60, 60),
 	)
 	gameDisplay.blit(SHOP["shopXbutton"], (displayWidth * 0.05, 0))
-
+	if Keys["Esc"]:
+		gameState = "Map"
 	SHOP["Text"]["Upgrades"].draw()
 	SHOP["Text"]["Shop"].draw()
 	SHOP["Text"]["Items"].draw()
 	SHOP["Text"]["Crew"].draw()
+
+	if SHOP["Buttons"]["cannonball"].run(False) == True:
+		F.inventory["cannonballs"]+=1
+		SAVE["gold"] -= 10
 
 	if (
 		SHOP["Buttons"]["Speed"].run(False) == True
@@ -1442,13 +1506,18 @@ def miniMap(windDir, windSpeed, zoom):
 		3,
 	)
 
+MAP["GoldCoin"] = loadImage("mapAssets/coin.png")
+MAP["GoldCoin"] = pygame.transform.scale(MAP["GoldCoin"], (32, 32))
 
 def MapUI(wind, pirateShips):
 	if gameState == "Map":
+		MAP["Text"]["Gold"].draw()
+		gameDisplay.blit(MAP["GoldCoin"], (displayWidth*0.15, displayHeight*0.005))
 		miniMap(wind[0], wind[1], 25)
 	if gameState == "Prep":
-		prepMenu(MAP["PlayerCargo"], PREP["Enemy"].cargo)
+		prepMenu(SAVE, PREP["Enemy"].cargo)
 	if gameState == "shop":
+		MAP["Text"]["Gold"].draw()
 		shop()
 
 
@@ -1496,7 +1565,8 @@ def prepMenu(playerCargo, enemyCargo):
 			if playerCargo["sailors"][i].location == 0:
 				F.inventory["sailors"].append(playerCargo["sailors"][i])
 		gameState = "Fight"
-
+	if Keys["Esc"]:
+		gameState = "Map"
 	dropRects = [
 		pygame.Rect(
 			displayWidth * 0.6,
@@ -1568,6 +1638,8 @@ for i in range(12):  # Creaing pirate ships in the map
 		)
 	)
 
+loadTime = time.time()-startLoad
+print(loadTime)
 # Main Loop
 while True:
 	startFrame = time.time()
@@ -1589,6 +1661,8 @@ while True:
 				Keys["D"] = True
 			if event.key == pygame.K_f:
 				print(clock.get_fps())
+			if event.key == pygame.K_ESCAPE:
+				Keys["Esc"] = True
 
 		if event.type == pygame.KEYUP:
 			if event.key == pygame.K_w:
@@ -1599,6 +1673,8 @@ while True:
 				Keys["S"] = False
 			if event.key == pygame.K_d:
 				Keys["D"] = False
+			if event.key == pygame.K_ESCAPE:
+				Keys["Esc"] = False
 			
 	if gameState == "Cutscene":
 		cutScene()
