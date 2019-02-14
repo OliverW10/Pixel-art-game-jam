@@ -1,3 +1,4 @@
+
 import time
 startLoad = time.time()
 import copy
@@ -834,7 +835,7 @@ def map():
 			)
 			if distance < 100 and mouseButtons[0] == True:
 				PREP["Enemy"] = copy.copy(MAP["PirateShips"][i])
-				gameState = "Prep"
+				gameState = "Fight"
 				F.text["cannonballAmmo"] = text(str(SAVE["inventory"]["cannonballs"]), 20, -20,  10, (0,0,0))
 				slotButtons["cannon"].changeDraw([F["drawImages"]["cannonball"].draw, F.text["cannonballAmmo"].XYdraw])
 				F.text["bulletAmmo"] = text(str(SAVE["inventory"]["bullets"]), 20, -20,  10, (0,0,0))
@@ -969,10 +970,24 @@ loadImage("fightAssets/cannonExplosion/2.png"),
 loadImage("fightAssets/cannonExplosion/3.png"),
 loadImage("fightAssets/cannonExplosion/4.png")]
 
+F.nuclearExplosion = [loadImage("fightAssets/NukeExplosion/0.png"),
+loadImage("fightAssets/NukeExplosion/1.png"),
+loadImage("fightAssets/NukeExplosion/2.png"),
+loadImage("fightAssets/NukeExplosion/3.png"),
+loadImage("fightAssets/NukeExplosion/4.png"),
+loadImage("fightAssets/NukeExplosion/5.png"),
+loadImage("fightAssets/NukeExplosion/6.png")
+]
+F.bulletExplosion = []
+for i in range(len(F.nuclearExplosion)):
+	F.nuclearExplosion[i] = drawImage(F.nuclearExplosion[i])
+	F.nuclearExplosion[i].resize(512, 512)
+
 for i in range(len(F.cannonballExplosion)):
 	F.cannonballExplosion[i] = drawImage(F.cannonballExplosion[i])
 	F.cannonballExplosion[i].resize(32, 32)
-F.bulletExplosion = []
+
+
 class explosion:
 	def __init__(self, Type, X, Y):
 		if Type == 1:
@@ -981,19 +996,50 @@ class explosion:
 		elif Type == 2:
 			self.frames = F.bulletExplosion
 			self.timePerFrame = 0.1
+		elif Type == 3:
+			self.timePerFrame = 0.2
+			self.frames = F.nuclearExplosion
 		self.frame = 0
 		self.timeRunning = 0
 		self.X = X
 		self.Y = Y
 		self.destory = False
+		self.flashBrightness = 255
+		self.Type = Type
 
 	def run(self):
 		self.timeRunning += frameTime
 		self.frame = math.floor(self.timeRunning / self.timePerFrame)
+		self.flashBrightness -= frameTime * 255 * 1
 		if self.frame >= len(self.frames):
 			self.destory = True
 		else:
 			self.frames[self.frame].draw(self.X, self.Y)
+		if self.Type == 3:
+			nukeSurf.set_alpha(self.flashBrightness)
+			gameDisplay.blit(nukeSurf, (0,0))
+
+nukeSurf = pygame.Surface((displayWidth, displayHeight))
+nukeSurf.fill((255,255,255))
+nukeSurf.set_alpha(255)
+class nuke:
+	def __init__(self, X):
+		self.X = X - displayWidth*0.075
+		self.targetX = X
+		self.Y = 0
+		self.destory = False
+
+	def run(self):
+		self.X += displayWidth * 0.1 * frameTime
+		self.Y += displayHeight * frameTime
+		if self.Y>displayHeight*0.7:
+			self.destory = True
+			F.projectiles.append(explosion(3, self.X, displayHeight-256))
+			shakeController([random.random() * 10 -5, random.random() * 10 -5], 2)
+		self.draw()
+
+	def draw(self):
+		F["drawImages"]["nuclearBomb"].draw(self.X, self.Y)
 
 class bullet:
 	def __init__(self, X, Y, Xvol, Yvol, Type):
@@ -1025,7 +1071,7 @@ class bullet:
 				)
 			elif self.type == 2:
 				shakeController(
-					[random.random() - 0.5, random.random() - 0.5], 0.1
+					[random.random() *0.5- 0.25, random.random()*0.5 - 0.25], 0.05
 				)
 			self.explode = True
 			self.Xvol = 0
@@ -1210,6 +1256,7 @@ F.pressed = True
 F.projectiles = []
 F.swivelTimer = 0
 F.cannonTimer = 0
+F.nukeTimer = -0.1
 
 def battleScreen():
 	gameDisplay.fill((255, 255, 255))
@@ -1222,7 +1269,7 @@ def battleScreen():
 		if mouseButtons[0] == True and F.cannonTimer < 0:
 			x = displayWidth * 0.2 - mousePos[0]
 			y = displayHeight * 0.6 - mousePos[1]
-			angle = -math.atan2(y, x) + math.pi / 2
+			angle = -math.atan2(y, x) - math.pi / 2
 			xvol = math.sin(angle) * 65
 			yvol = math.cos(angle) * 65
 			pygame.draw.line(
@@ -1235,7 +1282,7 @@ def battleScreen():
 		elif F.pressed == True:
 			x = displayWidth * 0.2 - mousePos[0]
 			y = displayHeight * 0.6 - mousePos[1]
-			angle = -math.atan2(y, x) + math.pi / 2
+			angle = -math.atan2(y, x) - math.pi / 2
 			xvol = math.sin(angle) * 55
 			yvol = math.cos(angle) * 55
 			if SAVE["inventory"]["cannonballs"] > 0:
@@ -1253,7 +1300,7 @@ def battleScreen():
 		if mouseButtons[0] == True and F.swivelTimer < 0:
 			x = displayWidth * 0.2 - mousePos[0]
 			y = displayHeight * 0.6 - mousePos[1]
-			angle = -math.atan2(y, x) + math.pi / 2
+			angle = -math.atan2(y, x) - math.pi / 2
 			angle += (random.random()-0.5) / 5
 			xvol = math.sin(angle) * 40
 			yvol = math.cos(angle) * 40
@@ -1264,13 +1311,17 @@ def battleScreen():
 				F.projectiles.append(
 					bullet(displayWidth * 0.2, displayHeight * 0.6, xvol, yvol, 2)
 				)
-				shakeController([random.random() - 0.5, random.random() - 0.5], 0.1)
+				#shakeController([random.random() *0.5, random.random() - 0.5], 0.1)
 				F.swivelTimer = 0.05
 			else:
 				F.swivelTimer = 0.05
-
+	if F.mode == "nuclearBomb":
+		if mouseButtons[0] == True and F.nukeTimer < 0:
+			F.projectiles.append(nuke(mousePos[0]))
+			F.nukeTimer = 30
 	F.swivelTimer -= frameTime
 	F.cannonTimer -= frameTime
+	F.nukeTimer -= frameTime
 
 	for i in slotButtons:
 		if F.mode == i:
@@ -1650,6 +1701,15 @@ while True:
 				print(clock.get_fps())
 			if event.key == pygame.K_ESCAPE:
 				Keys["Esc"] = True
+			if gameState == "Fight":
+				if event.key == pygame.K_1:
+					pass
+				if event.key == pygame.K_2:
+					pass
+				if event.key == pygame.K_3:
+					pass
+				if event.key == pygame.K_SPACE:
+					pass
 
 		if event.type == pygame.KEYUP:
 			if event.key == pygame.K_w:
