@@ -1,1 +1,1 @@
-{"gold":0, "inventory": {"sailors": [], "cannonballs": 10, "nets": 3, "bullets" : 100}, "crew":[]}
+{"gold": 100, "inventory": {"sailors": [], "cannonballs": 10, "nets": 3, "bullets" : 100}, "crew":[]}

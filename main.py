@@ -476,7 +476,7 @@ class text:
 
 
 class sailor:
-	def __init__(self, level, gameState="prep"):
+	def __init__(self, level):
 		self.level = level
 		self.gold = 0
 		self.stealingPower = level
@@ -494,11 +494,8 @@ class sailor:
 		if level == 3:
 			self.sprite = loadImage("mapAssets\Sailors\Good\lv3(0).png")
 
-		self.size = self.sprite.get_rect().size
-		self.size = [self.size[0] * 2, self.size[1] * 2]
 		self.rect = self.sprite.get_rect()
 		self.rect.size = self.size
-		self.gameState = gameState
 		self.X = None
 		self.Y = None
 		self.dragX = None
@@ -557,11 +554,9 @@ class sailor:
 		drawSprite = pygame.transform.scale(self.sprite, (Size))
 		gameDisplay.blit(drawSprite, Pos)
 
-
-SAVE["sailors"] = [sailor(3), sailor(2), sailor(2)]
-for i in range(len(SAVE["sailors"])):
-	SAVE["sailors"][i].setPos((i * 50) + 150, displayHeight * 0.7)
-
+#SAVE["sailors"] = [sailor(3), sailor(2), sailor(2)]
+#for i in range(len(SAVE["sailors"])):
+#	SAVE["sailors"][i].setPos((i * 50) + 150, displayHeight * 0.7)
 
 class wave:
 	def __init__(self, X, Y):
@@ -716,7 +711,7 @@ class PirateShip:
 			)
 
 
-MAP["Text"]["Gold"] = text("Gold: "+str(SAVE["gold"]), displayWidth*0.075, displayHeight*0.03, 20, (0,0,0))
+MAP["Text"]["Gold"] = text("Gold: "+str(SAVE["gold"]), displayWidth*0.075, displayHeight*0.03, 15, (0,0,0))
 
 # GAME STATES (Functions)
 def map():
@@ -767,21 +762,7 @@ def map():
 		),
 		5,
 	)
-	pygame.draw.line(
-		gameDisplay,
-		(0, 0, 0),
-		(0 - MAP["ScreenPos"][0], 0 - MAP["ScreenPos"][1]),
-		(
-			MAP["AreaSize"][0] - MAP["ScreenPos"][0],
-			MAP["AreaSize"][1] - MAP["ScreenPos"][1],
-		),
-	)
-	pygame.draw.line(
-		gameDisplay,
-		(0, 0, 0),
-		(MAP["AreaSize"][0] - MAP["ScreenPos"][0], 0 - MAP["ScreenPos"][1]),
-		(0 - MAP["ScreenPos"][0], MAP["AreaSize"][1] - MAP["ScreenPos"][1]),
-	)
+
 	if (
 		abs(sum(MAP["PlayerSpeed"]))
 		< MAP["Stats"]["speed"][MAP["PlayerLevels"]["speed"]] * 2
@@ -830,13 +811,13 @@ def map():
 	# Collisions
 	collideTemp = testCollision(MAP["PlayerPos"], False)
 	if collideTemp == True or collideTemp == "port":
-		MAP["PlayerSpeed"][0] = -MAP["PlayerSpeed"][0] * 1
+		MAP["PlayerSpeed"][0] = -MAP["PlayerSpeed"][0] * 1.0
 		MAP["PlayerPos"][0] += MAP["PlayerSpeed"][0] * frameTime * 30
 
 	MAP["PlayerPos"][1] += MAP["PlayerSpeed"][1] * frameTime * 30
 	collideTemp = testCollision(MAP["PlayerPos"], False)
 	if collideTemp == True or collideTemp == "port":
-		MAP["PlayerSpeed"][1] = -MAP["PlayerSpeed"][1] * 1
+		MAP["PlayerSpeed"][1] = -MAP["PlayerSpeed"][1] * 1.0
 		MAP["PlayerPos"][1] += MAP["PlayerSpeed"][1] * frameTime * 30
 
 	MAP["ScreenPos"] = [
@@ -1353,6 +1334,9 @@ SHOP["Text"]["Crew"] = text(
 )
 SHOP["Text"]["Cannonball"] = text("10G", 0, 25, 10, (20, 20, 20))
 
+SHOP["Text"]["Bullet"] = text("5G for 10", 0, 25, 8, (20, 20, 20))
+
+
 SHOP["Buttons"] = {}
 SHOP["Buttons"]["Speed"] = button(
 	displayHeight * 0.1,
@@ -1386,6 +1370,8 @@ SHOP["Buttons"]["HP"] = button(
 )
 SHOP["Buttons"]["cannonball"] = button(displayWidth*0.6, displayHeight*0.4, 60, 60, [SHOP["Text"]["Cannonball"].XYdraw, F.drawImages["cannonball"].draw], (20, 20, 0), (100, 75, 50), False)
 
+SHOP["Buttons"]["bullets"] = button(displayWidth*0.7, displayHeight*0.4, 60, 60, [SHOP["Text"]["Bullet"].XYdraw, F.drawImages["bullets"].draw], (20, 20, 0), (100, 75, 50), False)
+
 def shop():
 	gameDisplay.blit(MAP["BuyBoard"], (0, 0))
 	hover = (5, 5)
@@ -1415,8 +1401,11 @@ def shop():
 	if SHOP["Buttons"]["cannonball"].run(False) == True:
 		SAVE["inventory"]["cannonballs"]+=1
 		SAVE["gold"] -= 10
-		print(SAVE["gold"])
-
+		MAP["Text"]["Gold"] = text("Gold: "+str(SAVE["gold"]), displayWidth*0.075, displayHeight*0.03, 15, (0,0,0))
+	if SHOP["Buttons"]["bullets"].run(False) == True:
+		SAVE["inventory"]["bullets"]+=10
+		SAVE["gold"] -= 5
+		MAP["Text"]["Gold"] = text("Gold: "+str(SAVE["gold"]), displayWidth*0.075, displayHeight*0.03, 15, (0,0,0))
 	if (
 		SHOP["Buttons"]["Speed"].run(False) == True
 		and MAP["PlayerLevels"]["speed"] < len(MAP["UpgradeCosts"]["speed"]) - 1
@@ -1425,14 +1414,16 @@ def shop():
 		SHOP["Buttons"]["Speed"].changeDraw(
 			[SHOP["Text"]["Speed"][MAP["PlayerLevels"]["speed"]].XYdraw]
 		)
+		SAVE["gold"] -= SHOP["UpgradeCosts"]["speed"][MAP["PlayerLevels"]["speed"]-1]
+		MAP["Text"]["Gold"] = text("Gold: "+str(SAVE["gold"]), displayWidth*0.075, displayHeight*0.03, 15, (0,0,0))
 	if (
 		SHOP["Buttons"]["Armor"].run(False) == True
 		and MAP["PlayerLevels"]["armor"] < len(MAP["UpgradeCosts"]["armor"]) - 1
 	):
 		MAP["PlayerLevels"]["armor"] += 1
-		SHOP["Buttons"]["Armor"].changeDraw(
-			[SHOP["Text"]["Armor"][MAP["PlayerLevels"]["armor"]].XYdraw]
-		)
+		SHOP["Buttons"]["Armor"].changeDraw([SHOP["Text"]["Armor"][MAP["PlayerLevels"]["armor"]].XYdraw])
+		SAVE["gold"] -= SHOP["UpgradeCosts"]["armor"][MAP["PlayerLevels"]["armor"]-1]
+		MAP["Text"]["Gold"] = text("Gold: "+str(SAVE["gold"]), displayWidth*0.075, displayHeight*0.03, 15, (0,0,0))
 	if (
 		SHOP["Buttons"]["HP"].run(False) == True
 		and MAP["PlayerLevels"]["HP"] < len(MAP["UpgradeCosts"]["HP"]) - 1
@@ -1441,6 +1432,8 @@ def shop():
 		SHOP["Buttons"]["HP"].changeDraw(
 			[SHOP["Text"]["HP"][MAP["PlayerLevels"]["HP"]].XYdraw]
 		)
+		SAVE["gold"] -= SHOP["UpgradeCosts"]["HP"][MAP["PlayerLevels"]["HP"]-1]
+		MAP["Text"]["Gold"] = text("Gold: "+str(SAVE["gold"]), displayWidth*0.075, displayHeight*0.03, 15, (0,0,0))
 
 
 ### Other funtions ###
@@ -1507,14 +1500,13 @@ MAP["GoldCoin"] = pygame.transform.scale(MAP["GoldCoin"], (32, 32))
 def MapUI(wind, pirateShips):
 	if gameState == "Map":
 		MAP["Text"]["Gold"].draw()
-		gameDisplay.blit(MAP["GoldCoin"], (displayWidth*0.15, displayHeight*0.005))
+		gameDisplay.blit(MAP["GoldCoin"], (displayWidth*0.17, displayHeight*0.005))
 		miniMap(wind[0], wind[1], 25)
 	if gameState == "Prep":
-		prepMenu(SAVE, PREP["Enemy"].cargo)
+		prepMenu(SAVE["inventory"], PREP["Enemy"].cargo)
 	if gameState == "shop":
 		MAP["Text"]["Gold"].draw()
 		shop()
-
 
 PREP["Text"]["Prepare"] = text(
 	"Prepare for battle", displayWidth * 0.55, displayHeight * 0.2, 25, (20, 20, 0)
