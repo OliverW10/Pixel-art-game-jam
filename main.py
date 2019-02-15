@@ -39,7 +39,7 @@ MAP = MENU = F = PREP = SHOP = AttrDict({})
 
 SAVE = json.loads(file.read())
 
-Keys = {"W": False, "A": False, "S": False, "D": False, "E": False, "Esc" : False}
+Keys = {"W": False, "A": False, "S": False, "D": False, "E": False, "Esc" : False, "Space" : False}
 #SAVE["inventory"] = SAVE["inventory"]
 print(SAVE)
 #SAVE["inventory"] = {"sailors": [], "cannonballs": 10, "nets": 3, "bullets" : 20}
@@ -60,14 +60,15 @@ MAP["PlayerSpeed"] = [0, 0]
 MAP["PlayerDir"] = 0
 MAP["Stats"] = {
 	"speed": [1.5, 2.5, 3.5, 5, 25],
-	"armor": [1.3, 1.15, 1, 0.8, 0.1],
-	"HP": [50, 60, 75, 100, 150, 250, 350, 500, 2000], #hehe
+	"armor": [0.7, 0.5, 0.3, 0.2, 0.1],
+	"HP": [50, 75, 100, 150, 200, 250, 350, 400, 500],
 }
 MAP["PlayerLevels"] = {"speed": 0, "armor": 0, "HP": 0}
 MAP["PlayerStats"] = {
 	"speed": MAP["Stats"]["speed"][MAP["PlayerLevels"]["speed"]],
 	"armor": MAP["Stats"]["armor"][MAP["PlayerLevels"]["armor"]],
 	"HP": MAP["Stats"]["HP"][MAP["PlayerLevels"]["HP"]],
+	"maxHP" : MAP["Stats"]["HP"][MAP["PlayerLevels"]["HP"]]
 }
 SHOP["UpgradeCosts"] = {
 	"speed": [100, 500, 1200, 9999, "max"],
@@ -400,6 +401,14 @@ class drawImage:
 		rect = self.img.get_rect()
 		gameDisplay.blit(self.img, (X - rect.w / 2, Y - rect.h / 2))
 
+def blit_alpha(target, source, location, opacity):
+    x = location[0]
+    y = location[1]
+    temp = pygame.Surface((source.get_width(), source.get_height())).convert()
+    temp.blit(target, (-x, -y))
+    temp.blit(source, (0, 0))
+    temp.set_alpha(opacity)
+    target.blit(temp, location)
 
 class sparkle:
 	def __init__(self, X, Y):
@@ -840,6 +849,7 @@ def map():
 				slotButtons["cannon"].changeDraw([F["drawImages"]["cannonball"].draw, F.text["cannonballAmmo"].XYdraw])
 				F.text["bulletAmmo"] = text(str(SAVE["inventory"]["bullets"]), 20, -20,  10, (0,0,0))
 				slotButtons["swivel"].changeDraw([F["drawImages"]["bullets"].draw, F.text["bulletAmmo"].XYdraw])
+				F.enemieStats = MAP["PirateShips"][i]
 				# Drawing
 				# Waves
 	MAP["WaveSpawnTimer"] += frameTime
@@ -1036,18 +1046,20 @@ class nuke:
 			self.destory = True
 			F.projectiles.append(explosion(3, self.X, displayHeight-256))
 			shakeController([random.random() * 10 -5, random.random() * 10 -5], 2)
+			F.enemieStats.HP -= random.randint(200,220)
 		self.draw()
 
 	def draw(self):
 		F["drawImages"]["nuclearBomb"].draw(self.X, self.Y)
 
 class bullet:
-	def __init__(self, X, Y, Xvol, Yvol, Type):
+	def __init__(self, X, Y, Xvol, Yvol, Type, shotBy):
 		self.X, self.Y = X, Y
 		self.Xvol, self.Yvol = Xvol, Yvol
 		self.explode = False
 		self.destory = False
 		self.type = Type  # 1 for cannonball 2 for bullet
+		self.shotBy = shotBy #either player of enemey
 
 	def run(self):
 		self.X += self.Xvol * frameTime * 20
@@ -1064,7 +1076,11 @@ class bullet:
 				for i in range(2):
 					F.projectiles.append(shard(self.X, self.Y, 10))
 				self.destory = True
-		if self.checkCollide([pygame.Rect(600, 400, 100, 500)]):
+		if self.shotBy == "player":
+			rect = pygame.Rect(600, 400, 100, 500)
+		else:
+			rect = pygame.Rect(100, 400, 100, 500)
+		if self.checkCollide([rect]):
 			if self.type == 1:
 				shakeController(
 					[random.random() * 5 - 2.5, random.random() * 5 - 2.5], 0.3
@@ -1076,6 +1092,8 @@ class bullet:
 			self.explode = True
 			self.Xvol = 0
 			self.Yvol = 0
+		if F.sheildUp > 0.2 and self.X < 300:
+			self.Xvol -= (F.sheildUp/2) * self.Xvol
 
 		if self.X > displayWidth or self.X < 0 or self.Y > displayHeight:
 			self.destory = True
@@ -1096,6 +1114,16 @@ class bullet:
 				else:
 					F["drawImages"]["bullet"].draw(self.X, self.Y)
 			else:
+				if self.type == 1:
+					if self.shotBy == "player":
+						F.enemieStats.HP -= random.randint(8,15)
+					else:
+						MAP["PlayerStats"]["HP"] -= random.randint(8,15)
+				elif self.type == 2:
+					if self.shotBy == "player":
+						F.enemieStats.HP -= round(random.random()-0.2)
+					else:
+						MAP["PlayerStats"]["HP"] -= round(random.random()-0.2)
 				F.projectiles.append(explosion(self.type, self.X, self.Y))
 
 def drawCooldown(cooldown, totalCooldown, rect):
@@ -1152,7 +1180,9 @@ class button:
 		if self.ability == "cannon":
 			drawCooldown(F.cannonTimer, 1.5, pygame.Rect(self.X+hover[0], self.Y+hover[1], self.W, self.H))
 		elif self.ability == "bullets":
-			drawCooldown(F.swivelTimer, 0.2, pygame.Rect(self.X+hover[0], self.Y+hover[1], self.W, self.H))
+			drawCooldown(F.swivelTimer, 0.05, pygame.Rect(self.X+hover[0], self.Y+hover[1], self.W, self.H))
+		elif self.ability == "bomb":
+			drawCooldown(F.nukeTimer, 30, pygame.Rect(self.X+hover[0], self.Y+hover[1], self.W, self.H))
 		for i in range(len(self.drawList)):
 			self.drawList[i](
 				self.X + self.W / 2 + hover[0], self.Y + self.H / 2 + hover[1]
@@ -1246,6 +1276,11 @@ slotButtons = {
 	),
 }
 
+F.sheildImg = loadImage("fightAssets/sheild.png")
+F.sheildImg = pygame.transform.scale(F.sheildImg, (512, 512))
+F.sheildSurf = pygame.Surface((512, 512))
+F.sheildSurf.blit(F.sheildImg, (0,0))
+
 F.placeHolders = [
 	loadImage("fightAssets/background.png"),
 	loadImage("fightAssets/friendlyShip.png"),
@@ -1257,6 +1292,12 @@ F.projectiles = []
 F.swivelTimer = 0
 F.cannonTimer = 0
 F.nukeTimer = -0.1
+F.sheildBattery = 100
+F.sheildUp = 0
+F.enemeyShootTime = 3 - (150/100) #3 minus enemiey health /100
+F.enemieyShootTimer = 0
+F.enemieToShootBullet = 0
+F.enemieBulletShootTimer = 0
 
 def battleScreen():
 	gameDisplay.fill((255, 255, 255))
@@ -1290,7 +1331,7 @@ def battleScreen():
 				F.text["cannonballAmmo"] = text(str(SAVE["inventory"]["cannonballs"]), 20, -20,  10, (0,0,0))
 				slotButtons["cannon"].changeDraw([F["drawImages"]["cannonball"].draw, F.text["cannonballAmmo"].XYdraw])
 				F.projectiles.append(
-					bullet(displayWidth * 0.2, displayHeight * 0.6, xvol, yvol, 1)
+					bullet(displayWidth * 0.2, displayHeight * 0.6, xvol, yvol, 1, "player")
 				)
 				shakeController([random.random() * 2 - 1, random.random() * 2 - 1], 0.2)
 				F.cannonTimer = 1.5
@@ -1309,7 +1350,7 @@ def battleScreen():
 				F.text["bulletAmmo"] = text(str(SAVE["inventory"]["bullets"]), 20, -20, 10, (0,0,0))
 				slotButtons["swivel"].changeDraw([F["drawImages"]["bullets"].draw, F.text["bulletAmmo"].XYdraw])
 				F.projectiles.append(
-					bullet(displayWidth * 0.2, displayHeight * 0.6, xvol, yvol, 2)
+					bullet(displayWidth * 0.2, displayHeight * 0.6, xvol, yvol, 2, "player")
 				)
 				#shakeController([random.random() *0.5, random.random() - 0.5], 0.1)
 				F.swivelTimer = 0.05
@@ -1319,10 +1360,42 @@ def battleScreen():
 		if mouseButtons[0] == True and F.nukeTimer < 0:
 			F.projectiles.append(nuke(mousePos[0]))
 			F.nukeTimer = 30
+	if F.mode == "sheild" and F.sheildBattery > 0 and F.sheildUp < 1  and Keys["Space"] == True:
+		F.sheildUp += frameTime *5
+
+	if (F.sheildUp > 0 and Keys["Space"] == False) or (F.sheildUp > 0 and F.mode != "sheild"):
+		F.sheildUp -= frameTime
+	if F.sheildUp > 0:
+		blit_alpha(gameDisplay, F.sheildImg, (displayWidth * -0.2, displayHeight* 0.2), F.sheildUp*255)
+
 	F.swivelTimer -= frameTime
 	F.cannonTimer -= frameTime
 	F.nukeTimer -= frameTime
 
+	F.enemeyShootTime = 3 - (F.enemieStats.HP / 100)
+	F.enemieyShootTimer += frameTime
+	if F.enemieyShootTimer > F.enemeyShootTime:
+		F.enemieyShootTimer = 0
+		xvol = -30
+		yvol = (random.random()-0.5)*2
+		if random.randint(0,1) == 0:
+			F.enemieToShootBullet = random.randint(5, 10)
+		else:
+			F.projectiles.append(bullet(displayWidth * 0.7, displayHeight * 0.6, xvol, yvol, 1, "enemey"))
+
+	if F.enemieToShootBullet > 0:
+		if F.enemieBulletShootTimer < 0:
+			xvol = -30
+			yvol = (random.random()-0.5)*5
+			F.projectiles.append(bullet(displayWidth * 0.7, displayHeight * 0.6, xvol, yvol, 2, "enemey"))
+			F.enemieBulletShootTimer = 0.1
+			F.enemieToShootBullet -= 1
+		else:
+			F.enemieBulletShootTimer -= frameTime
+	F.text["myHP"] = text(str(MAP["PlayerStats"]["HP"]), displayWidth*0.3, displayHeight*0.2, 30, (0,0,0))
+	F.text["enemyHP"] = text(str(F.enemieStats.HP), displayWidth*0.7, displayHeight*0.2, 30, (0,0,0))
+	F.text["myHP"].draw()
+	F.text["enemyHP"].draw()
 	for i in slotButtons:
 		if F.mode == i:
 			if slotButtons[i].run(True) == True:
@@ -1354,7 +1427,7 @@ for i in range(len(SHOP["UpgradeCosts"]["speed"])):
 SHOP["Text"]["Armor"] = {}
 for i in range(len(SHOP["UpgradeCosts"]["armor"])):
 	SHOP["Text"]["Armor"][i] = text(
-		"Armor: " + str(SHOP["UpgradeCosts"]["armor"][i]),
+		"Sheild: " + str(SHOP["UpgradeCosts"]["armor"][i]),
 		0,
 		0,
 		25,
@@ -1485,7 +1558,12 @@ def shop():
 		)
 		SAVE["gold"] -= SHOP["UpgradeCosts"]["HP"][MAP["PlayerLevels"]["HP"]-1]
 		MAP["Text"]["Gold"] = text("Gold: "+str(SAVE["gold"]), displayWidth*0.075, displayHeight*0.03, 15, (0,0,0))
-
+	MAP["PlayerStats"] = {
+	"speed": MAP["Stats"]["speed"][MAP["PlayerLevels"]["speed"]],
+	"armor": MAP["Stats"]["armor"][MAP["PlayerLevels"]["armor"]],
+	"maxHP": MAP["Stats"]["HP"][MAP["PlayerLevels"]["HP"]],
+	"HP" : MAP["Stats"]["HP"][MAP["PlayerLevels"]["HP"]]
+	}
 
 ### Other funtions ###
 def waveDeleter():
@@ -1703,13 +1781,16 @@ while True:
 				Keys["Esc"] = True
 			if gameState == "Fight":
 				if event.key == pygame.K_1:
-					pass
+					F.mode = "cannon"
 				if event.key == pygame.K_2:
-					pass
+					F.mode = "swivel"
 				if event.key == pygame.K_3:
-					pass
+					F.mode = "nuclearBomb"
+				if event.key == pygame.K_4:
+					F.mode = "net"
 				if event.key == pygame.K_SPACE:
-					pass
+					Keys["Space"] = True
+					F.mode = "sheild"
 
 		if event.type == pygame.KEYUP:
 			if event.key == pygame.K_w:
@@ -1722,7 +1803,9 @@ while True:
 				Keys["D"] = False
 			if event.key == pygame.K_ESCAPE:
 				Keys["Esc"] = False
-			
+			if event.key == pygame.K_SPACE:
+				Keys["Space"] = False
+
 	if gameState == "Cutscene":
 		cutScene()
 	if gameState == "Menu":
