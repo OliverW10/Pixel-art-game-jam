@@ -41,7 +41,6 @@ SAVE = json.loads(file.read())
 
 Keys = {"W": False, "A": False, "S": False, "D": False, "E": False, "Esc" : False, "Space" : False}
 #SAVE["inventory"] = SAVE["inventory"]
-print(SAVE)
 #SAVE["inventory"] = {"sailors": [], "cannonballs": 10, "nets": 3, "bullets" : 20}
 
 # MAP variables
@@ -997,7 +996,6 @@ for i in range(len(F.cannonballExplosion)):
 	F.cannonballExplosion[i] = drawImage(F.cannonballExplosion[i])
 	F.cannonballExplosion[i].resize(32, 32)
 
-
 class explosion:
 	def __init__(self, Type, X, Y):
 		if Type == 1:
@@ -1092,8 +1090,10 @@ class bullet:
 			self.explode = True
 			self.Xvol = 0
 			self.Yvol = 0
-		if F.sheildUp > 0.2 and self.X < 300:
-			self.Xvol -= (F.sheildUp/2) * self.Xvol
+		#if F.sheildUp > 0.2 and self.X < 300:
+		#	self.Xvol -= (F.sheildUp/2) * self.Xvol old sheild
+		if F.sheild == True and self.X<400:
+			self.Xvol = -self.Xvol
 
 		if self.X > displayWidth or self.X < 0 or self.Y > displayHeight:
 			self.destory = True
@@ -1183,6 +1183,8 @@ class button:
 			drawCooldown(F.swivelTimer, 0.05, pygame.Rect(self.X+hover[0], self.Y+hover[1], self.W, self.H))
 		elif self.ability == "bomb":
 			drawCooldown(F.nukeTimer, 30, pygame.Rect(self.X+hover[0], self.Y+hover[1], self.W, self.H))
+		elif self.ability == "sheild":
+			drawCooldown(F.sheildTimer, 3,pygame.Rect(self.X+hover[0], self.Y+hover[1], self.W, self.H))
 		for i in range(len(self.drawList)):
 			self.drawList[i](
 				self.X + self.W / 2 + hover[0], self.Y + self.H / 2 + hover[1]
@@ -1191,6 +1193,29 @@ class button:
 	def changeDraw(self, drawList):
 		self.drawList = drawList
 
+F.sheildFrames = [loadImage("fightAssets/sheildExplosion/0.png"),
+loadImage("fightAssets/sheildExplosion/1.png"),
+loadImage("fightAssets/sheildExplosion/2.png"),
+loadImage("fightAssets/sheildExplosion/3.png")
+]
+for i in range(len(F.sheildFrames)):
+	F.sheildFrames[i] = pygame.transform.scale(
+		F.sheildFrames[i], (512,512)
+	)
+
+class sheildDraw:
+	def __init__(self):
+		self.frame = 0
+		self.time = 0
+		self.frameTime = 0.05
+		self.destory = False
+	def run(self):
+		self.time += frameTime
+		self.frame = round(self.time/self.frameTime)
+		if self.frame > len(F.sheildFrames)-1:
+			self.destory = True
+		else:
+			blit_alpha(gameDisplay, F.sheildFrames[self.frame], (displayWidth * -0.2, displayHeight* 0.2), 255)
 
 def destroyProjectiles():
 	for i in range(len(F.projectiles)):
@@ -1206,6 +1231,8 @@ F["images"] = {
 	"bullet": loadImage("fightAssets/bullet.png"),
 	"nuclearBomb": loadImage("fightAssets/nuclear_bomb.png"),
 	"net": loadImage("fightAssets/net.png"),
+	"sheildIcon": loadImage("fightAssets/sheild_icon.png"),
+	"target" : loadImage("fightAssets/target.png")
 }
 
 
@@ -1216,13 +1243,18 @@ F["drawImages"] = {
 	"bullet" : drawImage(F["images"]["bullet"]),
 	"nuclearBomb": drawImage(F["images"]["nuclearBomb"]),
 	"net": drawImage(F["images"]["net"]),
+	"sheildIcon": drawImage(F["images"]["sheildIcon"]),
+	"target":drawImage(F["images"]["target"])
 }
 
+F["drawImages"]["target"].resize(64, 64)
 F["drawImages"]["cannonball"].resize(32, 32)
 F["drawImages"]["net"].resize(32, 32)
 F["drawImages"]["bullets"].resize(32, 32)
 F["drawImages"]["bullet"].resize(24, 24)
 F["drawImages"]["nuclearBomb"].resize(32, 32)
+F["drawImages"]["sheildIcon"].resize(32, 32)
+
 for item in list(F["images"].keys()):
 	F["images"][item] = pygame.transform.scale(
 		F["images"][item], (round(displayWidth * 0.06), int(displayWidth * 0.06))
@@ -1274,13 +1306,22 @@ slotButtons = {
 		(255, 255, 255),
 		"net"
 	),
+	"sheild": button(
+		displayWidth*0.9,
+		displayHeight*0.9,
+		displayWidth*0.07,
+		displayHeight*0.07,
+		[F["drawImages"]["sheildIcon"].draw],
+		(0,0,0),
+		(255, 255, 255),
+		"sheild")
 }
 
 F.sheildImg = loadImage("fightAssets/sheild.png")
 F.sheildImg = pygame.transform.scale(F.sheildImg, (512, 512))
 F.sheildSurf = pygame.Surface((512, 512))
 F.sheildSurf.blit(F.sheildImg, (0,0))
-
+F.images
 F.placeHolders = [
 	loadImage("fightAssets/background.png"),
 	loadImage("fightAssets/friendlyShip.png"),
@@ -1293,12 +1334,11 @@ F.swivelTimer = 0
 F.cannonTimer = 0
 F.nukeTimer = -0.1
 F.sheildBattery = 100
-F.sheildUp = 0
 F.enemeyShootTime = 3 - (150/100) #3 minus enemiey health /100
 F.enemieyShootTimer = 0
 F.enemieToShootBullet = 0
 F.enemieBulletShootTimer = 0
-F.sheildPower = 5
+F.sheildTimer = 0
 
 def battleScreen():
 	gameDisplay.fill((255, 255, 255))
@@ -1357,21 +1397,18 @@ def battleScreen():
 				F.swivelTimer = 0.05
 			else:
 				F.swivelTimer = 0.05
+
 	if F.mode == "nuclearBomb":
 		if mouseButtons[0] == True and F.nukeTimer < 0:
 			F.projectiles.append(nuke(mousePos[0]))
 			F.nukeTimer = 30
-	if F.mode == "sheild" and F.sheildBattery > 0 and F.sheildUp < 1  and Keys["Space"] == True:
-		F.sheildUp += frameTime * 10
+		F["drawImages"]["target"].draw(mousePos[0], 500)
 
-	if (F.sheildUp > 0 and Keys["Space"] == False) or (F.sheildUp > 0 and F.mode != "sheild"):
-		F.sheildUp -= frameTime
-	if F.sheildUp > 0:
-		blit_alpha(gameDisplay, F.sheildImg, (displayWidth * -0.2, displayHeight* 0.2), F.sheildUp*255)
 
 	F.swivelTimer -= frameTime
 	F.cannonTimer -= frameTime
 	F.nukeTimer -= frameTime
+	F.sheildTimer -= frameTime
 
 	F.enemeyShootTime = 4 - (F.enemieStats.HP / 100)
 	F.enemieyShootTimer += frameTime
@@ -1393,6 +1430,9 @@ def battleScreen():
 			F.enemieToShootBullet -= 1
 		else:
 			F.enemieBulletShootTimer -= frameTime
+
+	if F.sheild == True:
+		F.projectiles.append(sheildDraw())
 	F.text["myHP"] = text(str(MAP["PlayerStats"]["HP"]), displayWidth*0.3, displayHeight*0.2, 30, (0,0,0))
 	F.text["enemyHP"] = text(str(F.enemieStats.HP), displayWidth*0.7, displayHeight*0.2, 30, (0,0,0))
 	F.text["myHP"].draw()
@@ -1754,7 +1794,7 @@ for i in range(12):  # Creaing pirate ships in the map
 			random.randint(5, 19),
 		)
 	)
-
+F.sheild = False
 loadTime = time.time()-startLoad
 print(loadTime)
 # Main Loop
@@ -1762,7 +1802,7 @@ while True:
 	startFrame = time.time()
 	mouseButtons = pygame.mouse.get_pressed()  # (left mouse button, middle, right)
 	mousePos = pygame.mouse.get_pos()  # (x, y)
-
+	F.sheild = False
 	for event in pygame.event.get():
 		if event.type == pygame.QUIT:
 			QUIT()
@@ -1791,7 +1831,10 @@ while True:
 					F.mode = "net"
 				if event.key == pygame.K_SPACE:
 					Keys["Space"] = True
-					F.mode = "sheild"
+					if F.sheildTimer <= 0:
+						F.sheild = True
+						F.sheildTimer = 3
+					#F.mode = "sheild"
 
 		if event.type == pygame.KEYUP:
 			if event.key == pygame.K_w:
