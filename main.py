@@ -1131,6 +1131,32 @@ def drawCooldown(cooldown, totalCooldown, rect):
 	if part>=0:
 		pygame.draw.rect(gameDisplay, (200, 200, 200), (rect.x, rect.y + rect.h, rect.w, -rect.h*part))
 
+F.babyFrames = [loadImage("fightAssets/baby0.png"), loadImage("fightAssets/baby1.png")]
+class baby:
+	def __init__(self, X, Y):
+		self.X = X
+		self.Y = Y
+		self.destroy = False
+		self.frame = 0
+		self.frameTime = 0
+		self.wave = 0 #is sin ed to get the y pos
+	def run(self):
+		self.frameTime += frameTime
+		if self.frameTime >= 1:
+			self.frameTime = 0
+		elif self.frameTime >=0.5:
+			self.frame = 1
+		else:
+			self.frame = 0
+
+		self.X+=frameTime*5
+		self.wave +=frameTime * 1.5
+		drawY = self.Y + math.sin(self.wave * math.pi)
+		self.draw(self.X, drawY)
+
+	def draw(self, X, Y):
+		gameDislay.blit(F.babyFrames[self.frame], (X, Y))
+
 class button:
 	def __init__(
 		self, X, Y, W, H, draw, shadowColour, buttonColour, ability
