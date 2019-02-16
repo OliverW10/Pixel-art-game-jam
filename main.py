@@ -1298,6 +1298,7 @@ F.enemeyShootTime = 3 - (150/100) #3 minus enemiey health /100
 F.enemieyShootTimer = 0
 F.enemieToShootBullet = 0
 F.enemieBulletShootTimer = 0
+F.sheildPower = 5
 
 def battleScreen():
 	gameDisplay.fill((255, 255, 255))
@@ -1361,7 +1362,7 @@ def battleScreen():
 			F.projectiles.append(nuke(mousePos[0]))
 			F.nukeTimer = 30
 	if F.mode == "sheild" and F.sheildBattery > 0 and F.sheildUp < 1  and Keys["Space"] == True:
-		F.sheildUp += frameTime *5
+		F.sheildUp += frameTime * 10
 
 	if (F.sheildUp > 0 and Keys["Space"] == False) or (F.sheildUp > 0 and F.mode != "sheild"):
 		F.sheildUp -= frameTime
@@ -1372,7 +1373,7 @@ def battleScreen():
 	F.cannonTimer -= frameTime
 	F.nukeTimer -= frameTime
 
-	F.enemeyShootTime = 3 - (F.enemieStats.HP / 100)
+	F.enemeyShootTime = 4 - (F.enemieStats.HP / 100)
 	F.enemieyShootTimer += frameTime
 	if F.enemieyShootTimer > F.enemeyShootTime:
 		F.enemieyShootTimer = 0
@@ -1386,7 +1387,7 @@ def battleScreen():
 	if F.enemieToShootBullet > 0:
 		if F.enemieBulletShootTimer < 0:
 			xvol = -30
-			yvol = (random.random()-0.5)*5
+			yvol = (random.random()-0.5)*10
 			F.projectiles.append(bullet(displayWidth * 0.7, displayHeight * 0.6, xvol, yvol, 2, "enemey"))
 			F.enemieBulletShootTimer = 0.1
 			F.enemieToShootBullet -= 1
