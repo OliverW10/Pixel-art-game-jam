@@ -59,7 +59,7 @@ MAP["PlayerSpeed"] = [0, 0]
 MAP["PlayerDir"] = 0
 MAP["Stats"] = {
 	"speed": [1.5, 2.5, 3.5, 5, 25],
-	"armor": [0.7, 0.5, 0.3, 0.2, 0.1],
+	"armor": [4, 2, 1.5, 1, 0.2],
 	"HP": [50, 75, 100, 150, 200, 250, 350, 400, 500],
 }
 MAP["PlayerLevels"] = {"speed": 0, "armor": 0, "HP": 0}
@@ -74,7 +74,6 @@ SHOP["UpgradeCosts"] = {
 	"armor": [200, 1000, 2000, 9999, "max"],
 	"HP": [50, 100, 200, 500, 1000, 1500, 9999, "max"],
 }
-#                          total 6800                             total 9200                        total 5350
 MAP["ShipDrawPos"] = [displayWidth / 2, displayHeight / 2]
 MAP["waveList"] = []
 MAP["WindDir"] = (
@@ -334,7 +333,8 @@ MAP.ships = [
 MAP["PlayerRect"] = MAP.ships[0].get_rect()
 
 for i in range(len(MAP.ships)):
-	MAP.ships[i] = pygame.transform.scale(MAP.ships[i], (32, 32))
+	size = MAP.ships[i].get_size()
+	MAP.ships[i] = pygame.transform.scale(MAP.ships[i], (size[0]*2, size[1]*2))
 
 MAP.waves = [
 	loadImage("mapAssets/Waves/wave1.png"),
@@ -635,7 +635,7 @@ class PirateShip:
 		if power >= 10 and power < 20:
 			self.type = "small"
 		if power >= 20 and power < 35:
-			self.type = "med"
+			self.type = "medium"
 		if power >= 35 and power < 50:
 			self.type = "large"
 		if power == 60:
@@ -716,11 +716,11 @@ class PirateShip:
 		else:
 			self.hovered = False
 		if (
-			self.drawX > -20
+			self.drawX > -40
 			and self.drawX < displayWidth + 20
-			and self.drawY > -20
+			and self.drawY > -40
 			and self.drawY < displayHeight + 20
-		):  # this for some reason makes it run 10-20% worse
+		):
 			gameDisplay.blit(
 				MAP["pirateShipsSprites"][self.type][self.dir], (self.drawX, self.drawY)
 			)
@@ -1137,11 +1137,14 @@ def drawCooldown(cooldown, totalCooldown, rect):
 		pygame.draw.rect(gameDisplay, (200, 200, 200), (rect.x, rect.y + rect.h, rect.w, -rect.h*part))
 
 F.babyFrames = [loadImage("fightAssets/baby0.png"), loadImage("fightAssets/baby1.png")]
+F.babyFrames[0] = pygame.transform.scale(F.babyFrames[0], (64, 64))
+F.babyFrames[1] = pygame.transform.scale(F.babyFrames[1], (64, 64))
+
 class baby:
 	def __init__(self, X, Y):
 		self.X = X
 		self.Y = Y
-		self.destroy = False
+		self.destory = False
 		self.frame = 0
 		self.frameTime = 0
 		self.wave = 0 #is sin ed to get the y pos
@@ -1155,12 +1158,12 @@ class baby:
 			self.frame = 0
 
 		self.X+=frameTime*5
-		self.wave +=frameTime * 1.5
-		drawY = self.Y + math.sin(self.wave * math.pi)
+		self.wave +=frameTime * 0.5
+		drawY = self.Y + math.sin(self.wave * math.pi) * 20
 		self.draw(self.X, drawY)
 
 	def draw(self, X, Y):
-		gameDislay.blit(F.babyFrames[self.frame], (X, Y))
+		gameDisplay.blit(F.babyFrames[self.frame], (X, Y))
 
 class button:
 	def __init__(
@@ -1216,6 +1219,8 @@ class button:
 			drawCooldown(F.nukeTimer, 30, pygame.Rect(self.X+hover[0], self.Y+hover[1], self.W, self.H))
 		elif self.ability == "sheild":
 			drawCooldown(F.sheildCooldown, F.lastSheildCooldown+0.0001,pygame.Rect(self.X+hover[0], self.Y+hover[1], self.W, self.H))
+		elif self.ability == "BB":
+			drawCooldown(F.BBcooldown, 7, pygame.Rect(self.X+hover[0], self.Y+hover[1], self.W, self.H))
 		for i in range(len(self.drawList)):
 			self.drawList[i](
 				self.X + self.W / 2 + hover[0], self.Y + self.H / 2 + hover[1]
@@ -1253,7 +1258,8 @@ F["drawImages"] = {
 	"nuclearBomb": drawImage(F["images"]["nuclearBomb"]),
 	"net": drawImage(F["images"]["net"]),
 	"sheildIcon": drawImage(F["images"]["sheildIcon"]),
-	"target":drawImage(F["images"]["target"])
+	"target":drawImage(F["images"]["target"]),
+	"BB" : drawImage(F["images"]["BB"])
 }
 
 F["drawImages"]["target"].resize(64, 64)
@@ -1263,6 +1269,7 @@ F["drawImages"]["bullets"].resize(32, 32)
 F["drawImages"]["bullet"].resize(24, 24)
 F["drawImages"]["nuclearBomb"].resize(32, 32)
 F["drawImages"]["sheildIcon"].resize(32, 32)
+F["drawImages"]["BB"].resize(32, 32)
 
 for item in list(F["images"].keys()):
 	F["images"][item] = pygame.transform.scale(
@@ -1310,10 +1317,10 @@ slotButtons = {
 		displayHeight * 0.9,
 		displayWidth * 0.07,
 		displayWidth * 0.07,
-		[F["drawImages"]["net"].draw],
+		[F["drawImages"]["BB"].draw],
 		(0, 0, 0),
 		(255, 255, 255),
-		"net"
+		"BB"
 	),
 	"sheild": button(
 		displayWidth*0.9,
@@ -1343,6 +1350,8 @@ F.sheildUpFor = 0
 F.sheildPower = 0
 F.sheildTimer = 0
 F.lastSheildCooldown = 0
+F.BBcooldown = 0
+F.winner = False
 
 def battleScreen():
 	global gameState
@@ -1408,9 +1417,16 @@ def battleScreen():
 			F.nukeTimer = 30
 		F["drawImages"]["target"].draw(mousePos[0], 500)
 
+	if F.mode == "BB":
+		if mouseButtons[0] == True and F.BBcooldown < 0:
+			F.projectiles.append(baby(displayWidth*0.2, mousePos[1]))
+			F.BBcooldown = 7
+		else:
+			gameDisplay.blit(F.babyFrames[0], (displayWidth*0.2, mousePos[1]))
+
 	if F.sheildCooldown <= 0:
 		if Keys["Space"] == True:
-			F.sheildUpFor += frameTime * 2.5
+			F.sheildUpFor += frameTime * MAP.PlayerStats["armor"]
 			if F.sheildPower < 1:
 				F.sheildPower += frameTime * 3
 		else:
@@ -1424,6 +1440,7 @@ def battleScreen():
 	F.swivelTimer -= frameTime
 	F.cannonTimer -= frameTime
 	F.nukeTimer -= frameTime
+	F.BBcooldown -= frameTime
 
 	F.enemeyShootTime = 4 - (F.enemieStats.HP / 100)
 	F.enemieyShootTimer += frameTime
@@ -1453,12 +1470,15 @@ def battleScreen():
 		gameState = "Map"
 		MAP["PlayerStats"]["HP"] = MAP["PlayerStats"]["maxHP"]
 	if F.enemieStats.HP < 0:
+
+	if victory
 		F.enemieStats.HP = F.enemieStats.maxHP
 		MAP["PirateShips"].remove(F.enemieStats)
 		gameState = "Map"
 		SAVE["gold"] += round(F.enemieStats.goldGiven)
 		MAP["Text"]["Gold"] = text("Gold: "+str(SAVE["gold"]), displayWidth*0.075, displayHeight*0.03, 15, (0,0,0))
 		MAP["PlayerStats"]["HP"] = MAP["PlayerStats"]["maxHP"]
+		MAP.pirateShips.append(PirateShip(random.randint(0, MAP["AreaSize"][0]), random.randint(0, MAP["AreaSize"][1]), random.randint(5, 49)))
 
 	F.text["myHP"] = text(str(MAP["PlayerStats"]["HP"]), displayWidth*0.3, displayHeight*0.2, 30, (0,0,0))
 	F.text["enemyHP"] = text(str(F.enemieStats.HP), displayWidth*0.7, displayHeight*0.2, 30, (0,0,0))
@@ -1817,7 +1837,7 @@ for i in range(12):  # Creaing pirate ships in the map
 		PirateShip(
 			random.randint(0, MAP["AreaSize"][0]),
 			random.randint(0, MAP["AreaSize"][1]),
-			random.randint(5, 19),
+			random.randint(5, 49),
 		)
 	)
 loadTime = time.time()-startLoad
@@ -1852,7 +1872,7 @@ while True:
 				if event.key == pygame.K_3:
 					F.mode = "nuclearBomb"
 				if event.key == pygame.K_4:
-					F.mode = "net"
+					F.mode = "BB"
 				if event.key == pygame.K_SPACE:
 					Keys["Space"] = True
 
