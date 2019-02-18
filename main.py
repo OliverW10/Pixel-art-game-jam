@@ -14,7 +14,7 @@ displayWidth, displayHeight = 800, 600
 pygame.init()
 screenDisplay = pygame.display.set_mode((displayWidth, displayHeight))
 gameDisplay = pygame.Surface((displayWidth, displayHeight))
-pygame.display.set_caption("penis face")
+pygame.display.set_caption("probrobly a pirate game")
 clock = pygame.time.Clock()
 loadImage = pygame.image.load
 
@@ -667,6 +667,7 @@ class barrel:
 		loadImage("mapAssets/barrel/0.png"),
 		loadImage("mapAssets/barrel/1.png")
 		]
+		self.delete = False
 
 	def checkMouse(self):
 		if self.drawX > 0 and self.drawX < displayWidth and self.drawY > 0 and self.drawY < displayHeight:
@@ -676,6 +677,7 @@ class barrel:
 					global SAVE 
 					SAVE["gold"] += random.randint(5, 20)
 					MAP["Text"]["Gold"] = text("Gold: "+str(SAVE["gold"]), displayWidth*0.075, displayHeight*0.03, 15, (0,0,0))
+					self.delete = True
 
 	def run(self):
 		self.time +=frameTime
@@ -1026,11 +1028,17 @@ def map():
 	MAP.barrelCreateTimer -= frameTime
 	if MAP.barrelCreateTimer < 0:
 		MAP.barrels.append(barrel())
-		MAP.barrelCreateTimer = random.randint(0, 1)
+		MAP.barrelCreateTimer = random.randint(5, 10)
 
 	for i in range(len(MAP.barrels)):
 		MAP.barrels[i].run()
 
+	i = 0
+	while i < len(MAP.barrels):
+		if MAP.barrels[i].delete == True:
+			del MAP.barrels[i]
+			break
+		i+=1
 	# Pirates
 	for i in range(len(MAP["PirateShips"])):
 		MAP["PirateShips"][i].AI()
@@ -1077,7 +1085,7 @@ def menu():
 	if playButton.collidepoint(mousePos[0], mousePos[1]) and mouseButtons[0]:
 		gameState = "Map"
 	if optionsButton.collidepoint(mousePos[0], mousePos[1]) and mouseButtons[0]:
-		gameState = "Options"
+		gameState = "Help"
 	if quitButton.collidepoint(mousePos[0], mousePos[1]) and mouseButtons[0]:
 		pygame.mouse.set_visible(True)
 		pygame.quit()
@@ -1201,7 +1209,6 @@ class bullet:
 		self.X += self.Xvol * frameTime * 20
 		self.Y += self.Yvol * frameTime * 20
 		self.Yvol += frameTime * 30
-		pygame.draw.rect(gameDisplay, (0, 0, 0), (550, 350, 200, 500), 3)
 		if self.explode == True:
 			global F
 			if self.type == 1:
@@ -1707,7 +1714,7 @@ def battleScreen():
 
 def cutScene():  # Need to make
 	global gameState
-	gameState = "Map"
+	gameState = "Menu"
 
 
 SHOP["Text"]["Speed"] = {}
@@ -2049,6 +2056,46 @@ def shakeController(shake, timer):
 	if round(shakeVol[0] * 5) == 0 and round(shakeVol[1] * 5) == 0:
 		shakeVol = [0, 0]
 
+tutorialFrame = 0
+AtutorialPressed = False
+DtutorialPressed = False
+tutorialFrames = [loadImage("menuAssets/tutorial/hover.PNG"),
+loadImage("menuAssets/tutorial/barrels.png"),
+loadImage("menuAssets/tutorial/goToFight.png"),
+loadImage("menuAssets/tutorial/tooHigh.png"),
+loadImage("menuAssets/tutorial/shop.png"),
+loadImage("menuAssets/tutorial/fightIntro.png"),
+loadImage("menuAssets/tutorial/sheild.png")]
+
+def tutorial():
+	global tutorialFrame
+	global gameState
+	global DtutorialPressed
+	global AtutorialPressed
+
+	if Keys["Esc"] == True:
+		gameState = "Menu"
+
+	if Keys["D"] == True and DtutorialPressed == False:
+		tutorialFrame += 1
+		DtutorialPressed = True
+
+	if Keys["D"] == False:
+		DtutorialPressed = False
+
+	if Keys["A"] == False:
+		AtutorialPressed = False
+
+	if Keys["A"] == True and AtutorialPressed == False:
+		tutorialFrame -= 1
+		AtutorialPressed = True
+
+	if tutorialFrame > len(tutorialFrames)-1:
+		gameState = "Menu"
+		tutorialFrame = 0
+	else:
+		gameDisplay.blit(tutorialFrames[tutorialFrame], (0,0))
+
 
 for i in range(12):  # Creaing pirate ships in the map
 	MAP["PirateShips"].append(
@@ -2116,6 +2163,8 @@ while True:
 		map()
 	if gameState == "Fight":
 		battleScreen()
+	if gameState == "Help":
+		tutorial()
 
 	shakeController([0, 0], None)
 
