@@ -43,6 +43,12 @@ Keys = {"W": False, "A": False, "S": False, "D": False, "E": False, "Esc" : Fals
 #SAVE["inventory"] = SAVE["inventory"]
 #SAVE["inventory"] = {"sailors": [], "cannonballs": 10, "nets": 3, "bullets" : 20}
 
+#Sounds
+F.sounds = {"cannon" : pygame.mixer.Sound("fightAssets/cannon.wav"),
+"nuke" : pygame.mixer.Sound("fightAssets/nuke.wav"),
+"swivel" : pygame.mixer.Sound("fightAssets/swivel.wav")}
+MAP["Music"] = pygame.mixer.music.load("mapAssets/mapMusic.wav")
+
 # MAP variables
 MAP["SparkleType"] = 1  # 0 is shit, 1 is fps low and 2 is off
 if MAP["SparkleType"] == 0:
@@ -820,6 +826,16 @@ def inventoryUI():
 			else:
 				MAP["inventoryUI"]["up"] = 0
 	else:
+		if SAVE["inventory"]["cannonballs"] * 10 < MAP["PlayerStats"]["maxHP"]+50:
+			gameDisplay.blit(MAP["warningSprite"], (displayWidth*0.88, displayWidth-30))
+			print("cannonballs warning")
+
+		if SAVE["inventory"]["bullets"] * 1 < MAP["PlayerStats"]["maxHP"]:
+			gameDisplay.blit(MAP["warningSprite"], (displayWidth*0.83, displayWidth-30))
+			print("bullets warning")
+
+		#dont need a warning for nukes
+
 		if mousePos[0] > displayWidth * 0.8 and mousePos[1] > displayHeight * 0.95:
 			MAP["inventoryUI"]["up"] += frameTime * 5
 		else:
@@ -1162,6 +1178,7 @@ class nuke:
 		self.X += displayWidth * 0.1 * frameTime
 		self.Y += displayHeight * frameTime
 		if self.Y>displayHeight*0.7:
+			pygame.mixer.Sound.play(F.sounds["nuke"])
 			self.destory = True
 			F.projectiles.append(explosion(3, self.X, displayHeight-256))
 			shakeController([random.random() * 10 -5, random.random() * 10 -5], 2)
@@ -1549,6 +1566,7 @@ def battleScreen():
 			xvol = math.sin(angle) * 55
 			yvol = math.cos(angle) * 55
 			if SAVE["inventory"]["cannonballs"] > 0:
+				pygame.mixer.Sound.play(F.sounds["cannon"])
 				SAVE["inventory"]["cannonballs"]-=1
 				F.text["cannonballAmmo"] = text(str(SAVE["inventory"]["cannonballs"]), 20, -20,  10, (0,0,0))
 				slotButtons["cannon"].changeDraw([F["drawImages"]["cannonball"].draw, F.text["cannonballAmmo"].XYdraw])
@@ -1568,6 +1586,7 @@ def battleScreen():
 			xvol = math.sin(angle) * 40
 			yvol = math.cos(angle) * 40
 			if SAVE["inventory"]["bullets"] > 0:
+				pygame.mixer.Sound.play(F.sounds["swivel"])
 				SAVE["inventory"]["bullets"]-=1
 				F.text["bulletAmmo"] = text(str(SAVE["inventory"]["bullets"]), 20, -20, 10, (0,0,0))
 				slotButtons["swivel"].changeDraw([F["drawImages"]["bullets"].draw, F.text["bulletAmmo"].XYdraw])
@@ -1792,7 +1811,7 @@ def shop():
 		(50, 50, 0),
 		(displayWidth * 0.9, 24, 60, 60),
 	)
-	gameDisplay.blit(SHOP["shopXbutton"], (displayWidth * 0.9 + hovesr[0], 0 + hover[1]))
+	gameDisplay.blit(SHOP["shopXbutton"], (displayWidth * 0.9 + hover[0], 0 + hover[1]))
 	if Keys["Esc"]:
 		gameState = "Map"
 	SHOP["Text"]["Upgrades"].draw()
