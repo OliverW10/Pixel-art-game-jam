@@ -643,10 +643,15 @@ def dist(point1, point2):
 MAP.barrelSprites = [loadImage("mapAssets/barrel/0.png"), loadImage("mapAssets/barrel/1.png")]
 MAP.barrels = []
 MAP.barrelCreateTimer = random.randint(5, 10)
+MAP.barrelText = text("click to pick up", 0, -10, 10, (0,0,0))
 
 class barrel:
 	def __init__(self):
-		while testCollision((self.X, self.Y), pirate) == False:
+		self.X = random.randint(0, MAP["AreaSize"][0])
+		self.Y = random.randint(0, MAP["AreaSize"][1])
+		self.drawX = self.X - MAP["PlayerPos"][0]
+		self.drawY = self.Y - MAP["PlayerPos"][1]
+		while testCollision((self.X, self.Y), True) == False:
 			self.X = random.randint(0, MAP["AreaSize"][0])
 			self.Y = random.randint(0, MAP["AreaSize"][1])
 		self.frameTime = 0.5
@@ -657,13 +662,25 @@ class barrel:
 		loadImage("mapAssets/barrel/1.png")
 		]
 
+	def checkMouse(self):
+		if self.drawX > 0 and self.drawX < displayWidth and self.drawY > 0 and self.drawY < displayHeight:
+			if dist((self.drawX, self.drawY), (mousePos[0], mousePos[1])) < 50:
+				MAP.barrelText.XYdraw(self.drawX, self.drawY)
+				if mouseButtons[0] == True:
+					global SAVE 
+					SAVE["gold"] += random.randint(5, 20)
+					MAP["Text"]["Gold"] = text("Gold: "+str(SAVE["gold"]), displayWidth*0.075, displayHeight*0.03, 15, (0,0,0))
+
 	def run(self):
 		self.time +=frameTime
 		self.frame = round(self.time % self.frameTime)
 		self.draw()
+		self.checkMouse()
 
 	def draw(self):
-		gameDisplay.blit(MAP.barrelSprites[self.frame], (self.X - MAP["PlayerPos"][0], self.Y - MAP["PlayerPos"][1]))
+		self.drawX = self.X - MAP["PlayerPos"][0]
+		self.drawY = self.Y - MAP["PlayerPos"][1]
+		gameDisplay.blit(MAP.barrelSprites[self.frame], (self.drawX, self.drawY))
 
 class PirateShip:
 	def __init__(
@@ -988,6 +1005,15 @@ def map():
 	#new land
 	for i in range(len(MAP["DrawList"])):
 		MAP["DrawList"][i].run()
+
+	#barrels
+	MAP.barrelCreateTimer -= frameTime
+	if MAP.barrelCreateTimer < 0:
+		MAP.barrels.append(barrel())
+		MAP.barrelCreateTimer = random.randint(0, 1)
+
+	for i in range(len(MAP.barrels)):
+		MAP.barrels[i].run()
 
 	# Pirates
 	for i in range(len(MAP["PirateShips"])):
@@ -1766,7 +1792,7 @@ def shop():
 		(50, 50, 0),
 		(displayWidth * 0.9, 24, 60, 60),
 	)
-	gameDisplay.blit(SHOP["shopXbutton"], (displayWidth * 0.9 + hover[0], 0 + hover[1]))
+	gameDisplay.blit(SHOP["shopXbutton"], (displayWidth * 0.9 + hovesr[0], 0 + hover[1]))
 	if Keys["Esc"]:
 		gameState = "Map"
 	SHOP["Text"]["Upgrades"].draw()
